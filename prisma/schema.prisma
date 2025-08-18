@@ -145,3 +145,10 @@ model UserBadge {
   @@unique([userId, badgeId])
 }
 
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")         // use POOLER for runtime
+  directUrl = env("DIRECT_DATABASE_URL")  // use DIRECT for db push/seed
+}
+
+
