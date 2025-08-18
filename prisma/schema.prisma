@@ -7,8 +7,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum ExerciseType { MCQ IMAGE_ID ORDERING CALC TERMS }
-enum TrainingSystem { PROJECT_MANAGEMENT SITE_SUPERVISION }
+enum ExerciseType {
+  MCQ
+  IMAGE_ID
+  ORDERING
+  CALC
+  TERMS
+}
+
+enum TrainingSystem {
+  PROJECT_MANAGEMENT
+  SITE_SUPERVISION
+}
 
 model User {
   id            String      @id
@@ -20,7 +30,7 @@ model User {
   xp            Int         @default(0)
   streak        Int         @default(0)
   lastActiveUTC DateTime?
-  userBadges    UserBadge[]        // <-- fixed (was `UserBadge? []?`)
+  userBadges    UserBadge[]        // fixed earlier
   role          UserRole?
   createdAt     DateTime    @default(now())
 }
@@ -134,3 +144,4 @@ model UserBadge {
 
   @@unique([userId, badgeId])
 }
+
