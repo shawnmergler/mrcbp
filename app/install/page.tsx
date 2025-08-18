@@ -1,1 +1,12 @@
-<div className="card"><h1 className="text-xl font-semibold mb-2">Install on iPhone</h1><ol className="list-decimal ml-6 space-y-1"><li>Open this site in Safari.</li><li>Tap the Share button.</li><li>Choose <strong>Add to Home Screen</strong> → Add.</li></ol></div>
+export default function InstallPage() {
+  return (
+    <div className="card">
+      <h1 className="text-xl font-semibold mb-2">Install on iPhone</h1>
+      <ol className="list-decimal ml-6 space-y-1">
+        <li>Open this site in Safari.</li>
+        <li>Tap the Share button.</li>
+        <li>Choose <strong>Add to Home Screen</strong> → Add.</li>
+      </ol>
+    </div>
+  );
+}
