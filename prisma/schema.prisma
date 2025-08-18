@@ -155,5 +155,3 @@ model Standard {
   description String?
   category    String?
 }
-
-}
