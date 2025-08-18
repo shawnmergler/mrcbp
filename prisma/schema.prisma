@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")         // pooled host for runtime
+  directUrl = env("DIRECT_DATABASE_URL")  // direct host for db push/seed
 }
 
 enum ExerciseType {
@@ -30,7 +31,7 @@ model User {
   xp            Int         @default(0)
   streak        Int         @default(0)
   lastActiveUTC DateTime?
-  userBadges    UserBadge[]        // fixed earlier
+  userBadges    UserBadge[]
   role          UserRole?
   createdAt     DateTime    @default(now())
 }
@@ -54,101 +55,4 @@ model UserRole {
   role   Role   @relation(fields: [roleId], references: [id])
 }
 
-model Division {
-  id      Int   @id @default(autoincrement())
-  csiCode Int
-  name    String
-  lessons Lesson[]
-
-  @@unique([csiCode])
-}
-
-model Lesson {
-  id          Int       @id @default(autoincrement())
-  divisionId  Int
-  division    Division  @relation(fields: [divisionId], references: [id])
-  system      TrainingSystem
-  roleId      Int?
-  role        Role?     @relation(fields: [roleId], references: [id])
-  title       String
-  slug        String    @unique
-  description String?
-  exercises   Exercise[]
-  progress    Progress[]
-}
-
-model Exercise {
-  id         Int       @id @default(autoincrement())
-  lessonId   Int
-  lesson     Lesson    @relation(fields: [lessonId], references: [id])
-  type       ExerciseType
-  prompt     String
-  data       Json
-  answer     Json
-  attempts   Attempt[]
-  srsItems   SRSItem[]
-}
-
-model Attempt {
-  id         Int       @id @default(autoincrement())
-  userId     String
-  user       User      @relation(fields: [userId], references: [id])
-  exerciseId Int
-  exercise   Exercise  @relation(fields: [exerciseId], references: [id])
-  correct    Boolean
-  response   Json?
-  createdAt  DateTime  @default(now())
-}
-
-model Progress {
-  id        Int      @id @default(autoincrement())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  lessonId  Int
-  lesson    Lesson   @relation(fields: [lessonId], references: [id])
-  percent   Float    @default(0)
-  updatedAt DateTime @updatedAt
-  createdAt DateTime @default(now())
-
-  @@unique([userId, lessonId])
-}
-
-model SRSItem {
-  id         Int       @id @default(autoincrement())
-  userId     String
-  user       User      @relation(fields: [userId], references: [id])
-  exerciseId Int
-  exercise   Exercise  @relation(fields: [exerciseId], references: [id])
-  repetition Int       @default(0)
-  interval   Int       @default(0)
-  ef         Float     @default(2.5)
-  dueDate    DateTime  @default(now())
-
-  @@unique([userId, exerciseId])
-}
-
-model Badge {
-  id          Int         @id @default(autoincrement())
-  code        String      @unique
-  name        String
-  description String
-  users       UserBadge[]
-}
-
-model UserBadge {
-  id      Int   @id @default(autoincrement())
-  userId  String
-  user    User  @relation(fields: [userId], references: [id])
-  badgeId Int
-  badge   Badge @relation(fields: [badgeId], references: [id])
-
-  @@unique([userId, badgeId])
-}
-
-datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")         // use POOLER for runtime
-  directUrl = env("DIRECT_DATABASE_URL")  // use DIRECT for db push/seed
-}
-
-
+model
