@@ -9,26 +9,26 @@ function num(v: FormDataEntryValue | null) {
   return Number.isFinite(n) ? n : null;
 }
 
-export async function createDivision(formData: FormData) {
+export async function createDivision(formData: FormData): Promise<void> {
   const csiCode = num(formData.get('csiCode'));
   const name = String(formData.get('name') || '').trim();
-  if (!csiCode || !name) return { ok: false, error: 'Missing csiCode or name' };
+  if (!csiCode || !name) return;
   await prisma.division.upsert({
     where: { csiCode },
     update: { name },
     create: { csiCode, name },
   });
   revalidatePath('/admin');
-  return { ok: true };
+  return;
 }
 
-export async function createLesson(formData: FormData) {
+export async function createLesson(formData: FormData): Promise<void> {
   const divisionId = num(formData.get('divisionId'));
   const system = String(formData.get('system') || '');
   const title = String(formData.get('title') || '').trim();
   const slug = String(formData.get('slug') || '').trim();
   const roleLevel = num(formData.get('roleLevel'));
-  if (!divisionId || !system || !title || !slug) return { ok: false, error: 'Missing required fields' };
+  if (!divisionId || !system || !title || !slug) return;
 
   let roleId: number | null = null;
   if (roleLevel) {
@@ -40,16 +40,16 @@ export async function createLesson(formData: FormData) {
     data: { divisionId, system: system as any, title, slug, roleId: roleId ?? undefined },
   });
   revalidatePath('/admin');
-  return { ok: true };
+  return;
 }
 
-export async function createExercise(formData: FormData) {
+export async function createExercise(formData: FormData): Promise<void> {
   const lessonId = num(formData.get('lessonId'));
   const type = String(formData.get('type') || '');
   const prompt = String(formData.get('prompt') || '').trim();
   const dataStr = String(formData.get('data') || '');
   const answerStr = String(formData.get('answer') || '');
-  if (!lessonId || !type || !prompt) return { ok: false, error: 'Missing required fields' };
+  if (!lessonId || !type || !prompt) return;
   let data: any = {};
   let answer: any = {};
   try { data = dataStr ? JSON.parse(dataStr) : {}; } catch {}
@@ -59,5 +59,5 @@ export async function createExercise(formData: FormData) {
     data: { lessonId, type: type as any, prompt, data, answer },
   });
   revalidatePath('/admin');
-  return { ok: true };
+  return;
 }
