@@ -1,38 +1,37 @@
-// app/admin/login/page.tsx
-export default function AdminLoginPage({
-  searchParams,
-}: {
-  searchParams?: { next?: string; error?: string };
-}) {
-  const next = searchParams?.next ?? '/admin';
+'use client';
 
+import { loginAction } from './actions';
+
+export default function AdminLoginPage() {
   return (
-    <div className="container max-w-md mx-auto p-6">
-      <div className="card p-6">
-        <h1 className="text-xl font-semibold mb-4">Admin Login</h1>
-        {searchParams?.error === '1' && (
-          <div className="mb-4 p-3 rounded bg-red-50 text-red-700">
-            Incorrect credentials. Try again.
-          </div>
-        )}
-        <form method="POST" action="/admin/login">
-          <input type="hidden" name="next" value={next} />
-          <div className="mb-3">
-            <label className="label">Username</label>
-            <input name="username" className="input full-width" autoComplete="username" />
-          </div>
-          <div className="mb-4">
-            <label className="label">Password</label>
+    <main className="container mx-auto p-4">
+      <section className="card max-w-md mx-auto">
+        <h1 className="text-xl font-semibold mb-3">Admin Sign In</h1>
+        <form action={loginAction} className="grid gap-3">
+          <label className="grid gap-1">
+            <span className="label">Username</span>
+            <input name="username" className="input" autoComplete="username" required />
+          </label>
+          <label className="grid gap-1">
+            <span className="label">Password</span>
             <input
               name="password"
               type="password"
-              className="input full-width"
+              className="input"
               autoComplete="current-password"
+              required
             />
-          </div>
-          <button className="btn w-full" type="submit">Sign in</button>
+          </label>
+          <button className="btn">Sign in</button>
         </form>
-      </div>
+        <p className="text-xs text-gray-500 mt-3">
+          Wrong credentials will return you to the home page with a retry link.
+        </p>
+      </section>
+    </main>
+  );
+}
+
     </div>
   );
 }
