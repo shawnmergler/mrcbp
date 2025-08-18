@@ -37,17 +37,18 @@ model User {
 }
 
 model Role {
-  id      Int   @id @default(autoincrement())
+  id      Int         @id @default(autoincrement())
   system  TrainingSystem
   name    String
   level   Int
   users   UserRole[]
   lessons Lesson[]
-  @@unique([system, level])
+
+  @@unique([system, level], name: "system_level")
 }
 
 model UserRole {
-  id     Int    @id @default(autoincrement())
+  id     Int   @id @default(autoincrement())
   userId String @unique
   user   User   @relation(fields: [userId], references: [id])
   roleId Int
@@ -55,48 +56,50 @@ model UserRole {
 }
 
 model Division {
-  id      Int   @id @default(autoincrement())
-  csiCode Int
-  name    String
-  lessons Lesson[]
+  id       Int      @id @default(autoincrement())
+  csiCode  Int
+  name     String
+  lessons  Lesson[]
+
   @@unique([csiCode])
 }
 
 model Lesson {
-  id          Int       @id @default(autoincrement())
+  id          Int     @id @default(autoincrement())
   divisionId  Int
-  division    Division  @relation(fields: [divisionId], references: [id])
+  division    Division @relation(fields: [divisionId], references: [id])
   system      TrainingSystem
   roleId      Int?
-  role        Role?     @relation(fields: [roleId], references: [id])
+  role        Role?    @relation(fields: [roleId], references: [id])
   title       String
-  slug        String    @unique
+  slug        String   @unique
   description String?
   exercises   Exercise[]
   progress    Progress[]
 }
 
 model Exercise {
-  id         Int       @id @default(autoincrement())
-  lessonId   Int
-  lesson     Lesson    @relation(fields: [lessonId], references: [id])
-  type       ExerciseType
-  prompt     String
-  data       Json
-  answer     Json
-  attempts   Attempt[]
-  srsItems   SRSItem[]
+  id        Int          @id @default(autoincrement())
+  lessonId  Int
+  lesson    Lesson       @relation(fields: [lessonId], references: [id])
+  type      ExerciseType
+  prompt    String
+  data      Json
+  answer    Json
+  attempts  Attempt[]
+  srsItems  SRSItem[]
+  assetUrl  String?
 }
 
 model Attempt {
-  id         Int       @id @default(autoincrement())
+  id         Int      @id @default(autoincrement())
   userId     String
-  user       User      @relation(fields: [userId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
   exerciseId Int
-  exercise   Exercise  @relation(fields: [exerciseId], references: [id])
+  exercise   Exercise @relation(fields: [exerciseId], references: [id])
   correct    Boolean
   response   Json?
-  createdAt  DateTime  @default(now())
+  createdAt  DateTime @default(now())
 }
 
 model Progress {
@@ -108,19 +111,21 @@ model Progress {
   percent   Float    @default(0)
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
+
   @@unique([userId, lessonId])
 }
 
 model SRSItem {
-  id         Int       @id @default(autoincrement())
+  id         Int      @id @default(autoincrement())
   userId     String
-  user       User      @relation(fields: [userId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
   exerciseId Int
-  exercise   Exercise  @relation(fields: [exerciseId], references: [id])
-  repetition Int       @default(0)
-  interval   Int       @default(0)
-  ef         Float     @default(2.5)
-  dueDate    DateTime  @default(now())
+  exercise   Exercise @relation(fields: [exerciseId], references: [id])
+  repetition Int      @default(0)
+  interval   Int      @default(0)
+  ef         Float    @default(2.5)
+  dueDate    DateTime @default(now())
+
   @@unique([userId, exerciseId])
 }
 
@@ -138,14 +143,15 @@ model UserBadge {
   user    User  @relation(fields: [userId], references: [id])
   badgeId Int
   badge   Badge @relation(fields: [badgeId], references: [id])
+
   @@unique([userId, badgeId])
 }
 
-
 model Standard {
-  id        Int      @id @default(autoincrement())
-  title     String
-  url       String
-  category  String   // e.g., 'Safety', 'Quality', 'Spec', 'Company'
-  createdAt DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  url         String
+  mime        String?
+  createdAt   DateTime @default(now())
 }

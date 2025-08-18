@@ -1,32 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export const config = {
-  matcher: ['/admin/:path*'],
-};
-
-export function middleware(req: NextRequest) {
-  const auth = req.headers.get('authorization') || '';
-  // Expect "Basic base64(username:password)"
-  const expectedUser = 'Shawn';
-  const expectedPass = 'Quiz0810';
-
-  if (!auth.startsWith('Basic ')) {
-    return new Response('Authentication required', {
-      status: 401,
-      headers: { 'WWW-Authenticate': 'Basic realm="Admin"' },
-    });
-  }
-
-  try {
-    const base64 = auth.slice(6);
-    const [user, pass] = Buffer.from(base64, 'base64').toString('utf8').split(':', 2);
-    if (user === expectedUser && pass === expectedPass) {
-      return NextResponse.next();
+export function middleware(req: NextRequest){
+  const path = req.nextUrl.pathname;
+  if(path.startsWith('/admin') || path.startsWith('/api/admin')){
+    const auth = req.headers.get('authorization');
+    const expectedUser = process.env.ADMIN_USER || 'Shawn';
+    const expectedPass = process.env.ADMIN_PASS || 'Quiz0810';
+    if(!auth?.startsWith('Basic ')){
+      return new NextResponse('Auth required', {
+        status: 401,
+        headers: { 'WWW-Authenticate': 'Basic realm="Admin"' }
+      });
     }
-  } catch {}
+    const decoded = Buffer.from(auth.split(' ')[1], 'base64').toString();
+    const [user, pass] = decoded.split(':');
+    if(user !== expectedUser || pass !== expectedPass){
+      return new NextResponse('Invalid credentials', { status: 401 });
+    }
+  }
+  return NextResponse.next();
+}
 
-  return new Response('Unauthorized', {
-    status: 401,
-    headers: { 'WWW-Authenticate': 'Basic realm="Admin"' },
-  });
+export const config = {
+  matcher: ['/admin/:path*','/api/admin/:path*']
 }

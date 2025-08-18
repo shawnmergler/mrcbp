@@ -1,46 +1,31 @@
 import './globals.css';
-import './gotham.css';
-import type { Metadata } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
-import PWA from '@/components/PWA';
-import QuickActions from '@/components/QuickActions';
-import InstallPrompt from '@/components/InstallPrompt';
-import MobileNav from '@/components/MobileNav';
-import StatBar from '@/components/StatBar';
-import { ThemeProvider } from '@/components/ThemeProvider';
-import ThemeToggle from '@/components/ThemeToggle';
+import UserPromptInjector from '@/components/UserPromptInjector';
+import QuickAccess from '@/components/QuickAccess';
 
-export const metadata: Metadata = {
+export const metadata = {
   title: 'Marmol-Radziner Construction BP',
-  description: 'Luxury residential construction training'
+  description: 'Luxury residential construction training',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body>
-        <ThemeProvider>
-          <PWA />
-          <header className="border-b bg-[rgba(255,255,255,0.7)] backdrop-blur sticky top-0 z-30">
-            <div className="container flex items-center justify-between py-3">
-              <Link href="/" className="text-base sm:text-xl font-bold">Marmol-Radziner Construction BP</Link>
-              <nav className="hidden sm:flex items-center gap-4 text-sm">
-                <Link href="/" className="hover:underline">Home</Link>
-                <Link href="/leaderboard" className="hover:underline">Leaderboard</Link>
-                <Link href="/install" className="hover:underline">Install App</Link>
-                <a href="/standards" target="_blank" rel="noreferrer" className="hover:underline">CSI MasterFormat</a>
-                <ThemeToggle />
-              </nav>
-            </div>
-          </header>
-          <main className="container py-4 pb-24 sm:pb-10">
-            <StatBar />
-            <div className="mt-4">{children}</div>
-          </main>
-          <MobileNav />
-          <QuickActions />
-          <InstallPrompt />
-        </ThemeProvider>
+        <header className="site-header">
+          <Link href="/" className="logowrap">
+            <Image src="/logo.png" alt="Marmol Radziner Construction" width={360} height={64} />
+            <span className="bp">BP</span>
+          </Link>
+          <nav className="topnav">
+            <Link className="link" href="/standards">Standards</Link>
+            <a className="link" href="/admin">Admin</a>
+          </nav>
+        </header>
+        <QuickAccess />
+        <main className="container">{children}</main>
+        <UserPromptInjector />
       </body>
     </html>
   );

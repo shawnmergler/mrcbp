@@ -1,22 +1,16 @@
 'use client';
-import Link from 'next/link';
-import type { CSSProperties, ReactNode } from 'react';
+import Link, { LinkProps } from 'next/link';
+import React from 'react';
 
 export default function LinkVT({
-  href,
-  children,
+  vtName,
   className,
   style,
-  vtName,
-}: {
-  href: string;
-  children?: ReactNode;
-  className?: string;
-  style?: CSSProperties;
-  vtName?: string;
-}) {
+  children,
+  ...props
+}: LinkProps & { vtName?: string; className?: string; style?: React.CSSProperties; children?: React.ReactNode }) {
   return (
-    <Link href={href} className={className} style={style} data-vt-name={vtName}>
+    <Link {...props} className={className} style={style} data-vt={vtName}>
       {children}
     </Link>
   );

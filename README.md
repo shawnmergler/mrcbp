@@ -1,34 +1,18 @@
-# Marmol-Radziner Construction BP (Modern iOS UI + Gotham)
+# Marmol-Radziner Construction BP
 
-A sleek, mobile-first training app for luxury residential construction. This package includes:
-- Modern iPhone-like UI (glass cards, icon tiles, gradients)
-- Icon tab bar + haptics + view transitions
-- Role-track badges, skeleton loaders, iOS pull-to-refresh
-- Prisma + PostgreSQL (Neon-ready)
-- **Gotham font integrated** (bring your licensed .woff2 files)
+A Next.js + Prisma training app tailored to luxury residential construction. Includes:
+- Admin UI (Basic Auth: `Shawn` / `Quiz0810` by default) for questions, divisions, standards, and leaderboard.
+- Quick Access to OSHA videos, ICC Building Codes, and Standards.
+- User onboarding dialog to capture name/email for leaderboard.
+- Vercel Blob upload (set `BLOB_READ_WRITE_TOKEN`) with base64 fallback.
 
-## Quick start
-```bash
-npm install
-cp .env.example .env   # fill DATABASE_URL and DIRECT_DATABASE_URL
-npm run db:push
-npm run db:seed
-npm run dev
+## Getting Started
+1. Create a Neon Postgres database and set:
 ```
-Open http://localhost:3000
-
-## Deploy on Vercel
-1. Push to GitHub, import the repo in Vercel.
-2. Env vars (Project → Settings → Environment Variables):
-   - `DATABASE_URL` → Neon pooled URI
-   - `DIRECT_DATABASE_URL` → Neon direct URI
-3. Build command runs Prisma push + seed automatically using package.json scripts.
-
-## Gotham font
-Put your licensed files here:
+DATABASE_URL="postgresql://USER:PASSWORD@HOST/db?sslmode=require"
+DIRECT_DATABASE_URL="postgresql://USER:PASSWORD@HOST/db?sslmode=require"
 ```
-public/fonts/gotham/Gotham-Book.woff2
-public/fonts/gotham/Gotham-Medium.woff2
-public/fonts/gotham/Gotham-Bold.woff2
-```
-Gotham is licensed—this repo does **not** include the binaries.
+2. `npm install`
+3. `npm run dev` for local dev, or `npm run build` for production build.
+
+The build script runs Prisma `db push` and seeds minimal data.

@@ -1,33 +1,25 @@
 {
   "name": "marmol-radziner-construction-bp",
+  "version": "0.5.0",
   "private": true,
-  "version": "0.4.0",
   "scripts": {
+    "postinstall": "prisma generate",
     "dev": "next dev",
     "build": "prisma db push && tsx prisma/seed.ts && next build",
-    "start": "next start",
-    "postinstall": "prisma generate",
-    "db:push": "prisma db push",
-    "db:seed": "tsx prisma/seed.ts"
+    "start": "next start"
   },
   "dependencies": {
-    "@prisma/client": "^5.22.0",
-    "@heroicons/react": "^2.1.5",
-    "framer-motion": "^11.3.0",
+    "@prisma/client": "5.22.0",
+    "@vercel/blob": "0.27.0",
     "next": "14.2.5",
     "react": "18.3.1",
-    "react-dom": "18.3.1",
-    "zod": "^3.23.8"
+    "react-dom": "18.3.1"
   },
   "devDependencies": {
-    "@types/node": "^20.14.11",
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
-    "autoprefixer": "^10.4.20",
-    "postcss": "^8.4.47",
-    "prisma": "^5.22.0",
-    "tailwindcss": "^3.4.10",
-    "tsx": "^4.19.2",
-    "typescript": "^5.5.4"
+    "prisma": "5.22.0",
+    "tsx": "4.19.2",
+    "typescript": "5.5.4",
+    "@types/node": "20.12.12",
+    "@types/react": "18.3.3"
   }
 }
