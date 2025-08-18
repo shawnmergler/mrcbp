@@ -16,11 +16,7 @@ function isStandalone() {
   }
   return false;
 }
-
-function isIOS() {
-  if (typeof navigator === 'undefined') return false;
-  return /iphone|ipad|ipod/i.test(navigator.userAgent);
-}
+function isIOS() { if (typeof navigator === 'undefined') return false; return /iphone|ipad|ipod/i.test(navigator.userAgent); }
 
 export default function InstallPrompt() {
   const [visible, setVisible] = useState(false);
@@ -32,53 +28,25 @@ export default function InstallPrompt() {
     if (isStandalone()) return;
     const dismissed = localStorage.getItem('mrbp_install_dismissed');
     if (dismissed === '1') return;
-
-    const handler = (e: Event) => {
-      e.preventDefault();
-      deferredRef.current = e as BIEvent;
-      setVisible(true);
-    };
+    const handler = (e: Event) => { e.preventDefault(); deferredRef.current = e as BIEvent; setVisible(true); };
     window.addEventListener('beforeinstallprompt', handler as any);
-
-    const t = setTimeout(() => {
-      if (!deferredRef.current) setVisible(true);
-    }, 1400);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handler as any);
-      clearTimeout(t);
-    };
+    const t = setTimeout(() => { if (!deferredRef.current) setVisible(true); }, 1400);
+    return () => { window.removeEventListener('beforeinstallprompt', handler as any); clearTimeout(t); };
   }, []);
 
   const install = async () => {
     const ev = deferredRef.current;
-    if (!ev) {
-      setVisible(false);
-      return;
-    }
-    await ev.prompt();
-    haptic('light');
-    setVisible(false);
+    if (!ev) { setVisible(false); return; }
+    await ev.prompt(); haptic('light'); setVisible(false);
     localStorage.setItem('mrbp_install_dismissed', '1');
   };
-
-  const dismiss = () => {
-    setVisible(false);
-    localStorage.setItem('mrbp_install_dismissed', '1');
-  };
+  const dismiss = () => { setVisible(false); localStorage.setItem('mrbp_install_dismissed', '1'); };
 
   return (
     <AnimatePresence>
       {visible && !isStandalone() && (
-        <motion.div
-          initial={{ y: 100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 100, opacity: 0 }}
-          transition={{ type: 'spring', stiffness: 260, damping: 26 }}
-          className="install-banner"
-          role="dialog"
-          aria-live="polite"
-        >
+        <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }}
+          transition={{ type: 'spring', stiffness: 260, damping: 26 }} className="install-banner" role="dialog" aria-live="polite">
           <div className="flex items-center gap-3 w-full">
             <div className="text-xl">📲</div>
             <div className="text-sm">

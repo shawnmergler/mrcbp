@@ -1,1 +1,20 @@
-import { prisma } from '@/lib/prisma'; export default async function SystemPage({ params }:{ params:{ system:'PROJECT_MANAGEMENT'|'SITE_SUPERVISION' } }){ const roles = await prisma.role.findMany({ where: { system: params.system }, orderBy: { level: 'asc' } }); return (<div className='space-y-4'><div className='card'><h1 className='text-2xl font-bold'>{params.system.replace('_',' ')}</h1><p className='text-gray-600 mt-1'>Pick your track and start training.</p></div><div className='grid-cards'>{roles.map(r=>(<a key={r.id} href={`/system/${params.system}/role/${r.id}`} className='card hover:shadow-md'><div className='font-semibold'>{r.level}. {r.name}</div><div className='text-sm text-gray-500 mt-1'>Role-based lessons</div></a>))}</div></div>); }
+import { prisma } from '@/lib/prisma';
+import Link from 'next/link';
+import { Icons } from '@/components/Icons';
+
+export default async function SystemPage({ params }: { params: { system: 'PROJECT_MANAGEMENT' | 'SITE_SUPERVISION' } }) {
+  const lessons = await prisma.lesson.findMany({ where: { system: params.system } });
+  return (
+    <div className="card">
+      <h1 className="text-xl font-bold mb-2">{params.system.replace('_',' ')}</h1>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        {lessons.map((l) => (
+          <Link key={l.id} href={`/lesson/${l.slug}`} className="tile">
+            <Icons.lesson className="w-6 h-6 text-gray-900" />
+            <div className="text-xs font-medium text-gray-900">{l.title}</div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}

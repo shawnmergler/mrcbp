@@ -1,0 +1,23 @@
+@font-face {
+  font-family: 'Gotham';
+  src: url('/fonts/gotham/Gotham-Book.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Gotham';
+  src: url('/fonts/gotham/Gotham-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Gotham';
+  src: url('/fonts/gotham/Gotham-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+:root { --app-sans: 'Gotham', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Inter, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif; }
+html, body, * { font-family: var(--app-sans) !important; }

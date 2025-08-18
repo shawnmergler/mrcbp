@@ -1,4 +1,3 @@
-// prisma/seed.ts
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
@@ -10,7 +9,6 @@ async function main() {
     [4, 'Senior Project Manager'],
     [5, 'Construction Director'],
   ];
-
   const ss: [number, string][] = [
     [1, 'Carpenter'],
     [2, 'Layout Foreman'],
@@ -19,8 +17,6 @@ async function main() {
     [5, 'Senior Superintendent'],
     [6, 'Regional Superintendent'],
   ];
-
-  // Project Management roles
   for (const [level, name] of pm) {
     await prisma.role.upsert({
       where: { system_level: { system: 'PROJECT_MANAGEMENT', level } },
@@ -28,8 +24,6 @@ async function main() {
       create: { system: 'PROJECT_MANAGEMENT', level, name },
     });
   }
-
-  // Site Supervision roles
   for (const [level, name] of ss) {
     await prisma.role.upsert({
       where: { system_level: { system: 'SITE_SUPERVISION', level } },
@@ -37,8 +31,29 @@ async function main() {
       create: { system: 'SITE_SUPERVISION', level, name },
     });
   }
+  // seed a couple divisions/lessons
+  const div = await prisma.division.upsert({
+    where: { csiCode: 1 },
+    update: { name: 'General Requirements' },
+    create: { csiCode: 1, name: 'General Requirements' },
+  });
+  await prisma.lesson.upsert({
+    where: { slug: 'pm-budget-basics' },
+    update: {},
+    create: {
+      divisionId: div.id, system: 'PROJECT_MANAGEMENT', title: 'Budget Basics', slug: 'pm-budget-basics',
+      description: 'Foundations of luxury residential budgeting.'
+    }
+  });
+  await prisma.lesson.upsert({
+    where: { slug: 'site-quality-checks' },
+    update: {},
+    create: {
+      divisionId: div.id, system: 'SITE_SUPERVISION', title: 'Quality Checks', slug: 'site-quality-checks',
+      description: 'Daily quality walkthrough patterns.'
+    }
+  });
 
-  // Demo user
   await prisma.user.upsert({
     where: { id: 'demo-user' },
     update: {},
