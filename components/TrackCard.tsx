@@ -1,25 +1,29 @@
-import Link from 'next/link';
-import { ComponentType } from 'react';
+'use client';
+import LinkVT from './LinkVT';
+import { Icons, IconKey } from './Icons';
 
 export default function TrackCard({
-  title, subtitle, href, gradient, Icon,
+  title, subtitle, href, gradient, icon, vtName,
 }: {
   title: string;
   subtitle: string;
   href: string;
   gradient: string;
-  Icon: ComponentType<React.SVGProps<SVGSVGElement>>;
+  icon: IconKey;
+  vtName?: string;
 }) {
+  const Icon = Icons[icon];
   return (
-    <Link href={href} className="track-card">
-      <div className="bg" style={{ background: gradient }} />
-      <div className="iconwrap">
-        <Icon className="w-6 h-6 text-white" />
+    <LinkVT href={href} vtName={vtName} className="card p-4 hover:shadow-lg transition-shadow" style={{ backgroundImage: gradient }}>
+      <div className="flex items-center gap-3">
+        <div className="shrink-0 rounded-xl bg-white/70 p-2">
+          <Icon className="w-6 h-6 text-gray-900" aria-hidden="true" data-vt />
+        </div>
+        <div className="min-w-0">
+          <div className="font-semibold truncate">{title}</div>
+          <div className="text-xs text-gray-800/80 truncate">{subtitle}</div>
+        </div>
       </div>
-      <div className="content">
-        <div className="text-sm/5 opacity-90">{subtitle}</div>
-        <div className="text-xl font-semibold">{title}</div>
-      </div>
-    </Link>
+    </LinkVT>
   );
 }
