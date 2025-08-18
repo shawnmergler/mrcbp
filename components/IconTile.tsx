@@ -1,16 +1,11 @@
 'use client';
-import { ComponentType } from 'react';
 import LinkVT from './LinkVT';
+import { Icons, IconKey } from './Icons';
 
 export default function IconTile({
-  label, href, Icon, hint, vtName,
-}: {
-  label: string;
-  href: string;
-  Icon: ComponentType<React.SVGProps<SVGSVGElement>>;
-  hint?: string;
-  vtName?: string;
-}) {
+  label, href, icon, hint, vtName,
+}: { label: string; href: string; icon: IconKey; hint?: string; vtName?: string }) {
+  const Icon = Icons[icon];
   return (
     <LinkVT href={href} vtName={vtName} className="tile active:scale-[0.98]">
       <Icon className="w-7 h-7 text-gray-900" aria-hidden="true" data-vt />
