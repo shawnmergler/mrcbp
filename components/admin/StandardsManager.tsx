@@ -94,3 +94,49 @@ export default function StandardsManager(){
     </section>
   );
 }
+// components/admin/StandardsManager.tsx
+'use client';
+export default function StandardsManager() {
+  return (
+    <div className="card">
+      <h2 className="font-semibold mb-2">Standards</h2>
+      <p>Upload company standards and manage the list.</p>
+      <input type="file" multiple className="input mt-2" />
+    </div>
+  );
+}
+// components/admin/DivisionsEditor.tsx
+'use client';
+export default function DivisionsEditor() {
+  return (
+    <div className="card">
+      <h2 className="font-semibold mb-2">CSI Divisions</h2>
+      <p>Edit division codes and labels.</p>
+      <form className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">
+        <input className="input" placeholder="CSI Code" />
+        <input className="input" placeholder="Label" />
+        <button className="btn">Add/Update</button>
+      </form>
+    </div>
+  );
+}
+// components/admin/LeaderboardEditor.tsx
+'use client';
+export default function LeaderboardEditor() {
+  return (
+    <div className="card">
+      <h2 className="font-semibold mb-2">Leaderboard Editor</h2>
+      <p>Edit names, delete entries, and adjust XP/streaks.</p>
+    </div>
+  );
+}
+// components/admin/QuestionBuilder.tsx
+'use client';
+export default function QuestionBuilder() {
+  return (
+    <div className="card">
+      <h2 className="font-semibold mb-2">Question Builder</h2>
+      <p>Create MCQs (4 choices), attach images/PDFs, and assign to lessons.</p>
+    </div>
+  );
+}
