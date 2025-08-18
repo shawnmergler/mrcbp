@@ -1,17 +1,14 @@
-// middleware.ts
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export function middleware(req: NextRequest) {
-  const { pathname, searchParams } = req.nextUrl;
+  const { pathname } = req.nextUrl;
 
-  // Only guard /admin routes; allow the login page itself through
+  // Gate all /admin/* except /admin/login
   if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {
-    const authed = req.cookies.get('admin_authed')?.value === 'true';
-    if (!authed) {
+    const token = req.cookies.get('admin_session')?.value;
+    if (!token) {
       const url = req.nextUrl.clone();
       url.pathname = '/admin/login';
-      url.searchParams.set('next', pathname + (searchParams.toString() ? `?${searchParams.toString()}` : ''));
       return NextResponse.redirect(url);
     }
   }
