@@ -16,7 +16,10 @@ export default function LeaderboardEditor() {
     const r = await fetch('/api/admin/leaderboard');
     if (r.ok) setRows(await r.json());
   }
-  useEffect(() => { refresh(); }, []);
+
+  useEffect(() => {
+    refresh();
+  }, []);
 
   async function upsert() {
     await fetch('/api/admin/leaderboard', {
@@ -30,7 +33,9 @@ export default function LeaderboardEditor() {
       }),
     });
     setEditingId(null);
-    setName(''); setScore(''); setStreak('');
+    setName('');
+    setScore('');
+    setStreak('');
     refresh();
   }
 
@@ -55,19 +60,39 @@ export default function LeaderboardEditor() {
       <h3 className="section">Leaderboard Editor</h3>
 
       <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 mt-2">
-        <input className="input" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
-        <input className="input" placeholder="Score" type="number" value={score}
-               onChange={(e) => setScore(e.target.value)} />
-        <input className="input" placeholder="Streak" type="number" value={streak}
-               onChange={(e) => setStreak(e.target.value)} />
-        <button className="btn" onClick={upsert} disabled={!name}>
+        <input
+          className="input"
+          placeholder="Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <input
+          className="input"
+          placeholder="Score"
+          type="number"
+          value={score}
+          onChange={(e) => setScore(e.target.value)}
+        />
+        <input
+          className="input"
+          placeholder="Streak"
+          type="number"
+          value={streak}
+          onChange={(e) => setStreak(e.target.value)}
+        />
+        <button className="btn" onClick={upsert} disabled={!name.trim()}>
           {editingId ? 'Update' : 'Add'}
         </button>
         {editingId && (
           <button
             type="button"
             className="btn-ghost"
-            onClick={() => { setEditingId(null); setName(''); setScore(''); setStreak(''); }}
+            onClick={() => {
+              setEditingId(null);
+              setName('');
+              setScore('');
+              setStreak('');
+            }}
           >
             Cancel
           </button>
@@ -77,14 +102,25 @@ export default function LeaderboardEditor() {
       <div className="mt-4 overflow-x-auto">
         <table className="table">
           <thead>
-            <tr><th>Name</th><th>Score</th><th>Streak</th><th></th></tr>
+            <tr>
+              <th>Name</th><th>Score</th><th>Streak</th><th></th>
+            </tr>
           </thead>
           <tbody>
-            {rows.map(r => (
+            {rows.map((r) => (
               <tr key={r.id}>
                 <td>{r.name}</td>
                 <td>{r.score}</td>
                 <td>{r.streak ?? 0}</td>
                 <td className="flex gap-2">
                   <button className="btn-ghost" onClick={() => startEdit(r)}>Edit</button>
-                  <button className="btn-ghost" o
+                  <button className="btn-ghost" onClick={() => remove(r.id)}>Delete</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
