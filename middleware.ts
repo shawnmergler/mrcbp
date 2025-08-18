@@ -1,26 +1,24 @@
-import { NextRequest, NextResponse } from 'next/server';
+// middleware.ts
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-export function middleware(req: NextRequest){
-  const path = req.nextUrl.pathname;
-  if(path.startsWith('/admin') || path.startsWith('/api/admin')){
-    const auth = req.headers.get('authorization');
-    const expectedUser = process.env.ADMIN_USER || 'Shawn';
-    const expectedPass = process.env.ADMIN_PASS || 'Quiz0810';
-    if(!auth?.startsWith('Basic ')){
-      return new NextResponse('Auth required', {
-        status: 401,
-        headers: { 'WWW-Authenticate': 'Basic realm="Admin"' }
-      });
-    }
-    const decoded = Buffer.from(auth.split(' ')[1], 'base64').toString();
-    const [user, pass] = decoded.split(':');
-    if(user !== expectedUser || pass !== expectedPass){
-      return new NextResponse('Invalid credentials', { status: 401 });
+export function middleware(req: NextRequest) {
+  const { pathname, searchParams } = req.nextUrl;
+
+  // Only guard /admin routes; allow the login page itself through
+  if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {
+    const authed = req.cookies.get('admin_authed')?.value === 'true';
+    if (!authed) {
+      const url = req.nextUrl.clone();
+      url.pathname = '/admin/login';
+      url.searchParams.set('next', pathname + (searchParams.toString() ? `?${searchParams.toString()}` : ''));
+      return NextResponse.redirect(url);
     }
   }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/admin/:path*','/api/admin/:path*']
-}
+  matcher: ['/admin/:path*'],
+};
