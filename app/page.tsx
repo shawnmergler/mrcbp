@@ -14,18 +14,18 @@ export default async function HomePage() {
         <p className="text-gray-700">Luxury residential training with modern, on-site practicality.</p>
         <div className="grid-cards mt-4">
           <TrackCard title="Project Management" subtitle="Budgets • Contracts • Risk"
-            href="/system/PROJECT_MANAGEMENT" gradient="linear-gradient(135deg, #1e3a8a, #0ea5e9)" Icon={Icons.pm} />
+            href="/system/PROJECT_MANAGEMENT" gradient="linear-gradient(135deg, #1e3a8a, #0ea5e9)" icon="pm" />
           <TrackCard title="Site Supervision" subtitle="Field • Quality • Codes"
-            href="/system/SITE_SUPERVISION" gradient="linear-gradient(135deg, #14532d, #10b981)" Icon={Icons.site} />
+            href="/system/SITE_SUPERVISION" gradient="linear-gradient(135deg, #14532d, #10b981)" icon="site" />
           <div className="card">
             <h3 className="font-semibold mb-2">Quick Access</h3>
             <div className="icon-grid">
-              <IconTile label="Continue PM"   href="/system/PROJECT_MANAGEMENT" icon="pm"   vtName="vt-pm" />
-              <IconTile label="Continue Site" href="/system/SITE_SUPERVISION"   icon="site" vtName="vt-site" />
-              <IconTile label="Leaderboard"   href="/leaderboard"               icon="leaderboard" />
-              <IconTile label="Admin"         href="/admin"                     icon="admin" />
-              <IconTile label="Install App"   href="/install"                   icon="bolt" />
-              <IconTile label="Standards"     href="https://www.csiresources.org/standards/masterformat" icon="cap" />
+              <IconTile label="Continue PM" href="/system/PROJECT_MANAGEMENT" icon="pm" vtName="vt-pm" />
+              <IconTile label="Continue Site" href="/system/SITE_SUPERVISION" icon="site" vtName="vt-site" />
+              <IconTile label="Leaderboard" href="/leaderboard" icon="leaderboard" />
+              <IconTile label="Admin" href="/admin" icon="admin" />
+              <IconTile label="Install App" href="/install" icon="bolt" />
+              <IconTile label="Standards" href="https://www.csiresources.org/standards/masterformat" icon="cap" />
             </div>
           </div>
         </div>

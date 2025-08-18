@@ -4,7 +4,13 @@ import { Icons, IconKey } from './Icons';
 
 export default function IconTile({
   label, href, icon, hint, vtName,
-}: { label: string; href: string; icon: IconKey; hint?: string; vtName?: string }) {
+}: {
+  label: string;
+  href: string;
+  icon: IconKey;
+  hint?: string;
+  vtName?: string;
+}) {
   const Icon = Icons[icon];
   return (
     <LinkVT href={href} vtName={vtName} className="tile active:scale-[0.98]">

@@ -9,6 +9,6 @@ export function haptic(kind: HapticKind = 'light') {
     success: [8, 40, 8],
     error: [24, 16, 24],
   };
-  // @ts-ignore: Vibration API typing
+  // @ts-ignore - The Vibration API isn't fully typed in TS DOM libs
   navigator.vibrate(patterns[kind] ?? patterns.light);
 }
