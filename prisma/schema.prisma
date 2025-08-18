@@ -148,10 +148,13 @@ model UserBadge {
 }
 
 model Standard {
-  id          Int     @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   title       String
-  url         String
+  url        String
   mime        String?
   description String?
   category    String?
+
+
+  createdAt   DateTime @default(now())
 }
