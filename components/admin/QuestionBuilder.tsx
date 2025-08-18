@@ -1,142 +1,102 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
-import Icons from '@/components/Icons';
 
-type Division = { id:number; csiCode:number; name:string };
-type Lesson   = { id:number; title:string };
-type Option = { text:string };
-type Preview = { prompt:string; options: Option[]; correct:number; assetUrl?:string };
+type Choice = { id: 'A' | 'B' | 'C' | 'D'; text: string; correct: boolean };
+type Section = { id: number; title: string };
+type Lesson = { id: number; title: string };
 
-export default function QuestionBuilder(){
-  const [divs, setDivs] = useState<Division[]>([]);
-  const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [divisionId, setDivisionId] = useState<number | ''>('');
-  const [lessonId, setLessonId] = useState<number | ''>('');
-
+export default function QuestionBuilder() {
   const [prompt, setPrompt] = useState('');
-  const [options, setOptions] = useState<Option[]>([{text:''},{text:''},{text:''},{text:''}]);
-  const [correct, setCorrect] = useState(0);
+  const [choices, setChoices] = useState<Choice[]>([
+    { id: 'A', text: '', correct: false },
+    { id: 'B', text: '', correct: false },
+    { id: 'C', text: '', correct: false },
+    { id: 'D', text: '', correct: false },
+  ]);
+  const [sectionId, setSectionId] = useState<number | ''>('');
+  const [lessonId, setLessonId] = useState<number | ''>('');
+  const [sections, setSections] = useState<Section[]>([]);
+  const [lessons, setLessons] = useState<Lesson[]>([]);
   const [file, setFile] = useState<File | null>(null);
-  const [assetUrl, setAssetUrl] = useState<string | undefined>(undefined);
+  const correct = useMemo(() => choices.find(c => c.correct)?.id ?? null, [choices]);
 
-  useEffect(()=>{ (async()=>{
-    const r = await fetch('/api/admin/divisions'); setDivs(await r.json());
-  })(); },[]);
-
-  useEffect(()=>{
-    (async()=>{
-      if(divisionId===''){ setLessons([]); return; }
-      const r = await fetch('/api/admin/questions?divisionId='+divisionId); const data = await r.json();
-      setLessons(data.lessons ?? []);
+  useEffect(() => {
+    (async () => {
+      const s = await fetch('/api/admin/sections'); if (s.ok) setSections(await s.json());
+      const l = await fetch('/api/admin/lessons');  if (l.ok) setLessons(await l.json());
     })();
-  },[divisionId]);
+  }, []);
 
-  const preview: Preview = useMemo(()=>({ prompt, options, correct, assetUrl }), [prompt, options, correct, assetUrl]);
+  function setChoice(id: Choice['id'], text: string) { setChoices(cs => cs.map(c => c.id === id ? { ...c, text } : c)); }
+  function setCorrect(id: Choice['id']) { setChoices(cs => cs.map(c => ({ ...c, correct: c.id === id }))); }
 
-  async function upload(f: File){
-    const form = new FormData(); form.append('file', f);
-    const r = await fetch('/api/admin/standards/upload', { method:'POST', body:form });
-    const data = await r.json(); setAssetUrl(data.url);
-  }
-
-  async function save(){
-    if(!lessonId) return;
+  async function save() {
+    let mediaUrl = '';
+    if (file) {
+      const form = new FormData(); form.append('file', file);
+      const r = await fetch('/api/admin/questions/upload', { method: 'POST', body: form });
+      if (r.ok) mediaUrl = (await r.json()).url;
+    }
     await fetch('/api/admin/questions', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ lessonId, prompt, options, correct, assetUrl })
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prompt,
+        choices: choices.map(c => ({ label: c.id, text: c.text, correct: c.correct })),
+        sectionId, lessonId, mediaUrl
+      }),
     });
-    setPrompt(''); setOptions([{text:''},{text:''},{text:''},{text:''}]); setCorrect(0); setFile(null); setAssetUrl(undefined);
+    setPrompt(''); setChoices(choices.map(c => ({ ...c, text: '', correct: false }))); setFile(null);
   }
 
   return (
     <section className="card">
-      <h3 className="section">Create Question (MCQ)</h3>
-      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:10}}>
+      <h3 className="section">Create Question</h3>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
-          <div className="label">Division</div>
-          <select className="input full-width" value={divisionId} onChange={(e)=>setDivisionId(e.target.value===''?'':Number(e.target.value))}>
-            <option value="">Select…</option>
-            {divs.map(d=> <option key={d.id} value={d.id}>Division {String(d.csiCode).padStart(2,'0')} — {d.name}</option>)}
-          </select>
-        </div>
-        <div>
-          <div className="label">Lesson</div>
-          <select className="input full-width" value={lessonId} onChange={(e)=>setLessonId(e.target.value===''?'':Number(e.target.value))}>
-            <option value="">Select…</option>
-            {lessons.map(l=> <option key={l.id} value={l.id}>{l.title}</option>)}
-          </select>
-        </div>
-      </div>
-      <div className="mt-4">
-        <div className="label">Prompt</div>
-        <textarea className="input full-width" rows={3} value={prompt} onChange={(e)=>setPrompt(e.target.value)} />
-      </div>
-      <div className="mt-4" style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:10}}>
-        {options.map((o, i) => (
-          <div key={i}>
-            <div className="label">Choice {String.fromCharCode(65+i)}</div>
-            <input className="input full-width" value={o.text} onChange={(e)=>{
-              const next=[...options]; next[i]={text:e.target.value}; setOptions(next);
-            }} />
-            <label style={{display:'block', marginTop:6}}>
-              <input type="radio" checked={correct===i} onChange={()=>setCorrect(i)} /> Correct answer
+          <div className="label">Prompt</div>
+          <textarea className="input full-width" rows={4} value={prompt} onChange={(e) => setPrompt(e.target.value)} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+            {choices.map(c => (
+              <div key={c.id} className="flex items-center gap-2">
+                <input type="radio" name="correct" checked={c.correct} onChange={() => setCorrect(c.id)} />
+                <input className="input w-full" placeholder={`Choice ${c.id}`} value={c.text}
+                       onChange={(e) => setChoice(c.id, e.target.value)} />
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3">
+            <select className="input" value={sectionId as any} onChange={(e) => setSectionId(e.target.value ? Number(e.target.value) : '')}>
+              <option value="">Select section</option>
+              {sections.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
+            </select>
+            <select className="input" value={lessonId as any} onChange={(e) => setLessonId(e.target.value ? Number(e.target.value) : '')}>
+              <option value="">Assign to lesson</option>
+              {lessons.map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
+            </select>
+            <label className="btn-ghost" style={{ padding: '6px 8px', borderRadius: 8, cursor: 'pointer', textAlign: 'center' }}>
+              Attach file
+              <input type="file" accept="image/*,application/pdf" style={{ display: 'none' }}
+                     onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
             </label>
           </div>
-        ))}
-      </div>
-      <div className="mt-4">
-        <div className="label">Optional image/PDF</div>
-        <label className="btn-ghost" style={{padding:'6px 8px', borderRadius:'8px', cursor:'pointer'}}>
-          Upload
-          <input type="file" style={{display:'none'}} onChange={(e)=>{ const f=e.target.files?.[0]; if(f){ setFile(f); upload(f); } }} />
-        </label>
-        {assetUrl ? <span style={{marginLeft:10}}><a href={assetUrl} target="_blank">View asset</a></span> : null}
-      </div>
+          <div className="mt-3"><button className="btn" onClick={save} disabled={!prompt || !correct}>Save Question</button></div>
+        </div>
 
-      <div className="mt-4"><button className="btn" onClick={save}>Save Question</button></div>
-
-      <div className="mt-4">
-        <h4 className="section">Live Preview</h4>
-        <div className="preview">
-          <div className="mb-3">{preview.prompt || 'Your prompt will appear here.'}</div>
-          {preview.assetUrl ? <div className="mb-3"><a href={preview.assetUrl} target="_blank">Attached asset</a></div> : null}
-          <ol style={{paddingLeft:16}}>
-            {preview.options.map((o,i)=> (
-              <li key={i} style={{marginBottom:8}}>
-                <label><input type="radio" disabled /> <span>{o.text || `Choice ${String.fromCharCode(65+i)}`}</span></label>
+        {/* Preview */}
+        <div className="rounded-lg border p-4 bg-white">
+          <div className="text-xs uppercase font-semibold text-gray-500 mb-2">Preview</div>
+          <div className="font-medium mb-3">{prompt || 'Your question will appear here…'}</div>
+          <ul className="space-y-2">
+            {choices.map(c => (
+              <li key={c.id} className={`p-2 rounded border ${c.correct ? 'border-green-500' : 'border-gray-200'}`}>
+                {c.id}. {c.text || <span className="text-gray-400">Choice {c.id}</span>}
               </li>
             ))}
-          </ol>
+          </ul>
+          {file && <div className="mt-3 text-sm truncate">Attached: {file.name}</div>}
         </div>
       </div>
-
-      <BulkCSV lessonId={lessonId||0} />
     </section>
-  );
-}
-
-function BulkCSV({ lessonId }: { lessonId:number }){
-  const [file, setFile] = useState<File | null>(null);
-  async function importCsv(){
-    if(!file || !lessonId) return;
-    const text = await file.text();
-    const rows = text.split(/\r?\n/).filter(Boolean);
-    // header: prompt, A, B, C, D, correct(A-D), assetUrl(optional)
-    for(const r of rows.slice(1)){
-      const cols = r.split(',');
-      const [prompt, A, B, C, D, correct, assetUrl] = cols;
-      const body = { lessonId, prompt, options:[{text:A},{text:B},{text:C},{text:D}], correct: (correct||'A').toUpperCase().charCodeAt(0)-65, assetUrl };
-      await fetch('/api/admin/questions', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-    }
-    alert('Import complete');
-  }
-  return (
-    <div className="card" style={{marginTop:16}}>
-      <div className="flex items-center gap-2"><Icons.csv className="w-6 h-6" /> Bulk CSV Import</div>
-      <div className="label">Columns: prompt, choiceA, choiceB, choiceC, choiceD, correct(A-D), assetUrl(optional)</div>
-      <input type="file" accept=".csv" onChange={(e)=>setFile(e.target.files?.[0]??null)} />
-      <div className="mt-4"><button className="btn" onClick={importCsv} disabled={!file || !lessonId}>Import</button></div>
-    </div>
   );
 }
