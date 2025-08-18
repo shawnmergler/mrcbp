@@ -20,12 +20,12 @@ export default async function HomePage() {
           <div className="card">
             <h3 className="font-semibold mb-2">Quick Access</h3>
             <div className="icon-grid">
-              <IconTile label="Continue PM" href="/system/PROJECT_MANAGEMENT" Icon={Icons.pm} vtName="vt-pm" />
-              <IconTile label="Continue Site" href="/system/SITE_SUPERVISION" Icon={Icons.site} vtName="vt-site" />
-              <IconTile label="Leaderboard" href="/leaderboard" Icon={Icons.leaderboard} />
-              <IconTile label="Admin" href="/admin" Icon={Icons.admin} />
-              <IconTile label="Install App" href="/install" Icon={Icons.bolt} />
-              <IconTile label="Standards" href="https://www.csiresources.org/standards/masterformat" Icon={Icons.cap} />
+              <IconTile label="Continue PM"   href="/system/PROJECT_MANAGEMENT" icon="pm"   vtName="vt-pm" />
+              <IconTile label="Continue Site" href="/system/SITE_SUPERVISION"   icon="site" vtName="vt-site" />
+              <IconTile label="Leaderboard"   href="/leaderboard"               icon="leaderboard" />
+              <IconTile label="Admin"         href="/admin"                     icon="admin" />
+              <IconTile label="Install App"   href="/install"                   icon="bolt" />
+              <IconTile label="Standards"     href="https://www.csiresources.org/standards/masterformat" icon="cap" />
             </div>
           </div>
         </div>
