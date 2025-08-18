@@ -1,1 +1,136 @@
-generator client { provider = 'prisma-client-js' } datasource db { provider = 'postgresql'; url = env('DATABASE_URL') } enum ExerciseType { MCQ IMAGE_ID ORDERING CALC TERMS } enum TrainingSystem { PROJECT_MANAGEMENT SITE_SUPERVISION } model User { id String @id email String? @unique displayName String? attempts Attempt[] progress Progress[] srsItems SRSItem[] xp Int @default(0) streak Int @default(0) lastActiveUTC DateTime? userBadges UserBadge? []? role UserRole? createdAt DateTime @default(now()) } model Role { id Int @id @default(autoincrement()) system TrainingSystem name String level Int users UserRole[] lessons Lesson[] @@unique([system, level]) } model UserRole { id Int @id @default(autoincrement()) userId String @unique user User @relation(fields: [userId], references: [id]) roleId Int role Role @relation(fields: [roleId], references: [id]) } model Division { id Int @id @default(autoincrement()) csiCode Int name String lessons Lesson[] @@unique([csiCode]) } model Lesson { id Int @id @default(autoincrement()) divisionId Int division Division @relation(fields: [divisionId], references: [id]) system TrainingSystem roleId Int? role Role? @relation(fields: [roleId], references: [id]) title String slug String @unique description String? exercises Exercise[] progress Progress[] } model Exercise { id Int @id @default(autoincrement()) lessonId Int lesson Lesson @relation(fields: [lessonId], references: [id]) type ExerciseType prompt String data Json answer Json attempts Attempt[] srsItems SRSItem[] } model Attempt { id Int @id @default(autoincrement()) userId String user User @relation(fields: [userId], references: [id]) exerciseId Int exercise Exercise @relation(fields: [exerciseId], references: [id]) correct Boolean response Json? createdAt DateTime @default(now()) } model Progress { id Int @id @default(autoincrement()) userId String user User @relation(fields: [userId], references: [id]) lessonId Int lesson Lesson @relation(fields: [lessonId], references: [id]) percent Float @default(0) updatedAt DateTime @updatedAt createdAt DateTime @default(now()) @@unique([userId, lessonId]) } model SRSItem { id Int @id @default(autoincrement()) userId String user User @relation(fields: [userId], references: [id]) exerciseId Int exercise Exercise @relation(fields: [exerciseId], references: [id]) repetition Int @default(0) interval Int @default(0) ef Float @default(2.5) dueDate DateTime @default(now()) @@unique([userId, exerciseId]) } model Badge { id Int @id @default(autoincrement()) code String @unique name String description String users UserBadge[] } model UserBadge { id Int @id @default(autoincrement()) userId String user User @relation(fields: [userId], references: [id]) badgeId Int badge Badge @relation(fields: [badgeId], references: [id]) @@unique([userId, badgeId]) }
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ExerciseType { MCQ IMAGE_ID ORDERING CALC TERMS }
+enum TrainingSystem { PROJECT_MANAGEMENT SITE_SUPERVISION }
+
+model User {
+  id            String      @id
+  email         String?     @unique
+  displayName   String?
+  attempts      Attempt[]
+  progress      Progress[]
+  srsItems      SRSItem[]
+  xp            Int         @default(0)
+  streak        Int         @default(0)
+  lastActiveUTC DateTime?
+  userBadges    UserBadge[]        // <-- fixed (was `UserBadge? []?`)
+  role          UserRole?
+  createdAt     DateTime    @default(now())
+}
+
+model Role {
+  id      Int   @id @default(autoincrement())
+  system  TrainingSystem
+  name    String
+  level   Int
+  users   UserRole[]
+  lessons Lesson[]
+
+  @@unique([system, level])
+}
+
+model UserRole {
+  id     Int    @id @default(autoincrement())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+  roleId Int
+  role   Role   @relation(fields: [roleId], references: [id])
+}
+
+model Division {
+  id      Int   @id @default(autoincrement())
+  csiCode Int
+  name    String
+  lessons Lesson[]
+
+  @@unique([csiCode])
+}
+
+model Lesson {
+  id          Int       @id @default(autoincrement())
+  divisionId  Int
+  division    Division  @relation(fields: [divisionId], references: [id])
+  system      TrainingSystem
+  roleId      Int?
+  role        Role?     @relation(fields: [roleId], references: [id])
+  title       String
+  slug        String    @unique
+  description String?
+  exercises   Exercise[]
+  progress    Progress[]
+}
+
+model Exercise {
+  id         Int       @id @default(autoincrement())
+  lessonId   Int
+  lesson     Lesson    @relation(fields: [lessonId], references: [id])
+  type       ExerciseType
+  prompt     String
+  data       Json
+  answer     Json
+  attempts   Attempt[]
+  srsItems   SRSItem[]
+}
+
+model Attempt {
+  id         Int       @id @default(autoincrement())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+  exerciseId Int
+  exercise   Exercise  @relation(fields: [exerciseId], references: [id])
+  correct    Boolean
+  response   Json?
+  createdAt  DateTime  @default(now())
+}
+
+model Progress {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  lessonId  Int
+  lesson    Lesson   @relation(fields: [lessonId], references: [id])
+  percent   Float    @default(0)
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@unique([userId, lessonId])
+}
+
+model SRSItem {
+  id         Int       @id @default(autoincrement())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+  exerciseId Int
+  exercise   Exercise  @relation(fields: [exerciseId], references: [id])
+  repetition Int       @default(0)
+  interval   Int       @default(0)
+  ef         Float     @default(2.5)
+  dueDate    DateTime  @default(now())
+
+  @@unique([userId, exerciseId])
+}
+
+model Badge {
+  id          Int         @id @default(autoincrement())
+  code        String      @unique
+  name        String
+  description String
+  users       UserBadge[]
+}
+
+model UserBadge {
+  id      Int   @id @default(autoincrement())
+  userId  String
+  user    User  @relation(fields: [userId], references: [id])
+  badgeId Int
+  badge   Badge @relation(fields: [badgeId], references: [id])
+
+  @@unique([userId, badgeId])
+}
