@@ -1,50 +1,54 @@
 'use client';
 import { useEffect, useState } from 'react';
 
-type Division = { id:number; csiCode:number; name:string };
+type Division = { id: number; csiCode: number; label: string };
 
-export default function DivisionsEditor(){
-  const [list, setList] = useState<Division[]>([]);
-  const [csi, setCsi] = useState<number | ''>('');
-  const [name, setName] = useState('');
+export default function DivisionsEditor() {
+  const [divs, setDivs] = useState<Division[]>([]);
+  const [code, setCode] = useState<string>(''); // keep as string for input
+  const [label, setLabel] = useState('');
 
-  async function refresh(){
-    const r = await fetch('/api/admin/divisions'); setList(await r.json());
+  async function refresh() {
+    const r = await fetch('/api/admin/divisions');
+    if (r.ok) setDivs(await r.json());
   }
-  useEffect(()=>{ refresh(); },[]);
+  useEffect(() => { refresh(); }, []);
 
-  async function add(){
-    if(!csi || !name) return;
-    await fetch('/api/admin/divisions', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ csiCode: Number(csi), name }) });
-    setCsi(''); setName(''); await refresh();
+  async function upsert() {
+    await fetch('/api/admin/divisions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ csiCode: Number(code), label }),
+    });
+    setCode(''); setLabel(''); refresh();
   }
 
-  async function update(d:Division){
-    await fetch('/api/admin/divisions', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(d) });
-  }
-
-  async function del(id:number){
-    await fetch('/api/admin/divisions', { method:'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id }) });
-    await refresh();
+  async function remove(id: number) {
+    await fetch('/api/admin/divisions', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    refresh();
   }
 
   return (
     <section className="card">
       <h3 className="section">CSI Divisions</h3>
-      <div style={{display:'grid', gridTemplateColumns:'120px 1fr 120px', gap:8}}>
-        <input className="input" type="number" placeholder="Code" value={csi} onChange={(e)=>setCsi(e.target.value===''?'':Number(e.target.value))} />
-        <input className="input" placeholder="Label" value={name} onChange={(e)=>setName(e.target.value)} />
-        <button className="btn" onClick={add}>Add</button>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">
+        <input className="input" placeholder="CSI Code" value={code} onChange={(e) => setCode(e.target.value)} />
+        <input className="input" placeholder="Label" value={label} onChange={(e) => setLabel(e.target.value)} />
+        <button className="btn" onClick={upsert} disabled={!code || !label}>Add/Update</button>
       </div>
-      <div className="mt-4">
+      <div className="mt-4 overflow-x-auto">
         <table className="table">
-          <thead><tr><th width="90">Code</th><th>Label</th><th width="150"></th></tr></thead>
+          <thead><tr><th>Code</th><th>Label</th><th></th></tr></thead>
           <tbody>
-            {list.map(d => (
+            {divs.map(d => (
               <tr key={d.id}>
-                <td><input className="input" type="number" defaultValue={d.csiCode} onBlur={(e)=>update({...d, csiCode:Number(e.target.value)})} /></td>
-                <td><input className="input full-width" defaultValue={d.name} onBlur={(e)=>update({...d, name:e.target.value})} /></td>
-                <td><button className="btn-ghost" onClick={()=>del(d.id)}>Delete</button></td>
+                <td>{String(d.csiCode).padStart(2, '0')}</td>
+                <td>{d.label}</td>
+                <td><button className="btn-ghost" onClick={() => remove(d.id)}>Delete</button></td>
               </tr>
             ))}
           </tbody>
@@ -53,3 +57,4 @@ export default function DivisionsEditor(){
     </section>
   );
 }
+
