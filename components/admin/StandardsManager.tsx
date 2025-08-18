@@ -92,8 +92,7 @@ export default function StandardsManager(){
         </table>
       </div>
     </section>
-  );
-}
+    
 // components/admin/StandardsManager.tsx
 'use client';
 export default function StandardsManager() {
@@ -103,8 +102,7 @@ export default function StandardsManager() {
       <p>Upload company standards and manage the list.</p>
       <input type="file" multiple className="input mt-2" />
     </div>
-  );
-}
+
 // components/admin/DivisionsEditor.tsx
 'use client';
 export default function DivisionsEditor() {
@@ -118,8 +116,7 @@ export default function DivisionsEditor() {
         <button className="btn">Add/Update</button>
       </form>
     </div>
-  );
-}
+
 // components/admin/LeaderboardEditor.tsx
 'use client';
 export default function LeaderboardEditor() {
@@ -128,8 +125,7 @@ export default function LeaderboardEditor() {
       <h2 className="font-semibold mb-2">Leaderboard Editor</h2>
       <p>Edit names, delete entries, and adjust XP/streaks.</p>
     </div>
-  );
-}
+
 // components/admin/QuestionBuilder.tsx
 'use client';
 export default function QuestionBuilder() {
