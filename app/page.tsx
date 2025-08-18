@@ -1,40 +1,96 @@
 import Link from 'next/link';
-import TrackCard from '@/components/TrackCard';
-import Icons from '@/components/Icons';
-import { prisma } from '@/lib/prisma';
 
-export default async function HomePage(){
-  const divisions = await prisma.division.findMany({ include: { lessons: true } });
+type SearchParams = {
+  [key: string]: string | string[] | undefined;
+};
+
+function first(q: string | string[] | undefined) {
+  return Array.isArray(q) ? q[0] : q;
+}
+
+export default function Home({
+  searchParams,
+}: {
+  searchParams?: SearchParams;
+}) {
+  const badTry = first(searchParams?.adminError) === '1';
+
   return (
-    <div>
-      <div className="grid-cards mt-4">
-        <TrackCard title="Project Management" subtitle="Budgets • Contracts • Risk" href="/system/PROJECT_MANAGEMENT" gradient="linear-gradient(135deg, #1e3a8a, #0ea5e9)" icon="pm" />
-        <TrackCard title="Site Supervision" subtitle="Field • Quality • Codes" href="/system/SITE_SUPERVISION" gradient="linear-gradient(135deg, #14532d, #10b981)" icon="site" />
-      </div>
-      <div className="section">Divisions</div>
-      <div className="grid-cards">
-        {divisions.map(d => (
-          <div key={d.id} className="card">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="iconwrap" style={{ background: 'rgba(17,24,39,.06)' }}>
-                <Icons.division className="w-6 h-6 text-gray-900" />
-              </div>
-              <div>
-                <div className="font-medium">Division {String(d.csiCode).padStart(2,'0')}</div>
-                <div className="text-xs" style={{color:'#4b5563'}}>{d.name}</div>
-              </div>
-            </div>
-            <div className="grid-cards">
-              {d.lessons.map(l => (
-                <Link key={l.id} href={`/lesson/${l.slug}`} className="tile">
-                  <Icons.lesson className="w-6 h-6 text-gray-900" data-vt />
-                  <div className="text-xs font-medium text-gray-900 text-center">{l.title}</div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+    <main className="container mx-auto p-4">
+      {/* Friendly banner shown after an incorrect Admin login */}
+      {badTry && (
+        <div
+          role="status"
+          className="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+        >
+          Admin sign-in failed. Click{' '}
+          <Link href="/admin/login" className="underline">
+            Admin
+          </Link>{' '}
+          to try again.
+        </div>
+      )}
+
+      {/* --- Your existing homepage content goes below this line --- */}
+      {/* If you already have content here, keep it; this block is a safe placeholder. */}
+      <section className="card mb-6">
+        <h1 className="text-xl font-semibold">Welcome</h1>
+        <p className="text-sm text-gray-600">
+          Use the quick links below to jump into training and resources.
+        </p>
+      </section>
+
+      {/* Quick Access (example) */}
+      <nav
+        aria-label="Quick Access"
+        className="card w-full mb-6 p-4 grid gap-3 sm:grid-cols-2 md:grid-cols-3"
+      >
+        <Link href="/lesson" className="btn">
+          Lessons
+        </Link>
+        <Link href="/questions" className="btn">
+          Practice Questions
+        </Link>
+        <Link href="/standards" className="btn">
+          Standards
+        </Link>
+        <a
+          href="https://www.osha.gov/training"
+          target="_blank"
+          rel="noreferrer"
+          className="btn"
+        >
+          OSHA Safety Training
+        </a>
+        <a
+          href="https://codes.iccsafe.org/"
+          target="_blank"
+          rel="noreferrer"
+          className="btn"
+        >
+          Building Codes (ICC)
+        </a>
+        <Link href="/leaderboard" className="btn">
+          Leaderboard
+        </Link>
+      </nav>
+
+      {/* Placeholder main grid */}
+      <section className="grid gap-4 sm:grid-cols-2">
+        <div className="card p-4">
+          <h2 className="font-semibold mb-2">Project Management</h2>
+          <p className="text-sm text-gray-600">
+            Budgets • Contracts • Risk • Scheduling
+          </p>
+        </div>
+        <div className="card p-4">
+          <h2 className="font-semibold mb-2">Site Supervision</h2>
+          <p className="text-sm text-gray-600">
+            Field • Quality • Codes • Safety
+          </p>
+        </div>
+      </section>
+      {/* --- End placeholder content --- */}
+    </main>
   );
 }
