@@ -1,10 +1,12 @@
+// components/admin/StandardsManager.tsx
 'use client';
+
 import { useEffect, useState } from 'react';
-import Icons from '@/components/Icons';
+import { Icons } from '@/components/Icons';
 
-type Standard = { id:number; title:string; description?:string; url:string; mime?:string };
+type Standard = { id: number; title: string; description?: string; url: string; mime?: string };
 
-export default function StandardsManager(){
+export default function StandardsManager() {
   const [list, setList] = useState<Standard[]>([]);
   const [drag, setDrag] = useState(false);
   const [progress, setProgress] = useState<number | null>(null);
@@ -12,127 +14,106 @@ export default function StandardsManager(){
   const [description, setDescription] = useState('');
   const [file, setFile] = useState<File | null>(null);
 
-  async function refresh(){
-    const r = await fetch('/api/admin/standards'); setList(await r.json());
+  async function refresh() {
+    const r = await fetch('/api/admin/standards');
+    if (r.ok) setList(await r.json());
   }
-  useEffect(()=>{ refresh(); },[]);
+  useEffect(() => { refresh(); }, []);
 
-  async function upload(f: File){
+  async function upload(f: File) {
     setProgress(0);
     const form = new FormData();
     form.append('file', f);
-    const xhr = new XMLHttpRequest();
-    const p = new Promise<string>((resolve, reject)=>{
-      xhr.upload.onprogress = (e)=>{ if(e.lengthComputable) setProgress(Math.round((e.loaded/e.total)*100)); };
-      xhr.onload = ()=>{ try{ const data = JSON.parse(xhr.responseText); resolve(data.url); }catch(e){ reject(e);} };
+
+    const url = await new Promise<string>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) setProgress(Math.round((e.loaded / e.total) * 100));
+      };
+      xhr.onload = () => {
+        try { resolve(JSON.parse(xhr.responseText).url as string); }
+        catch (e) { reject(e); }
+      };
       xhr.onerror = reject;
+      xhr.open('POST', '/api/admin/standards/upload');
+      xhr.send(form);
     });
-    xhr.open('POST','/api/admin/standards/upload'); xhr.send(form);
-    const url = await p;
+
     setProgress(null);
     return url;
   }
 
-  async function add(){
+  async function add() {
     let url = '';
-    if(file) url = await upload(file);
-    await fetch('/api/admin/standards', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ title, description, url, mime: file?.type }) });
+    if (file) url = await upload(file);
+    await fetch('/api/admin/standards', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, description, url, mime: file?.type }),
+    });
     setTitle(''); setDescription(''); setFile(null);
-    await refresh();
+    refresh();
   }
 
-  async function del(id:number){
-    await fetch('/api/admin/standards', { method:'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id }) });
-    await refresh();
+  async function del(id: number) {
+    await fetch('/api/admin/standards', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    refresh();
   }
 
   return (
     <section className="card">
       <h3 className="section">Standards</h3>
-      <div className="dragger"
-        onDragOver={(e)=>{e.preventDefault(); setDrag(true);}}
-        onDragLeave={()=>setDrag(false)}
-        onDrop={(e)=>{ e.preventDefault(); setDrag(false); const f=e.dataTransfer.files?.[0]; if(f) setFile(f); }}
-        style={{background: drag? '#eef2ff':'transparent'}}
+
+      <div
+        className="dragger"
+        onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
+        onDragLeave={() => setDrag(false)}
+        onDrop={(e) => { e.preventDefault(); setDrag(false); const f = e.dataTransfer.files?.[0]; if (f) setFile(f); }}
+        style={{ background: drag ? '#eef2ff' : 'transparent' }}
       >
-        <div className="flex items-center gap-2" style={{justifyContent:'center'}}>
+        <div className="flex items-center gap-2" style={{ justifyContent: 'center' }}>
           <Icons.upload className="w-6 h-6" /> Drag & Drop a file here or
-          <label className="btn-ghost" style={{padding:'6px 8px', borderRadius:'8px', cursor:'pointer'}}>
+          <label className="btn-ghost" style={{ padding: '6px 8px', borderRadius: 8, cursor: 'pointer' }}>
             Choose File
-            <input type="file" style={{display:'none'}} onChange={(e)=> setFile(e.target.files?.[0] ?? null)} />
+            <input type="file" style={{ display: 'none' }} onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
           </label>
         </div>
-        {file ? <div className="mt-4">Selected: <strong>{file.name}</strong></div> : null}
-        {progress!=null ? <div className="mt-4">Uploading… {progress}%</div> : null}
+        {file && <div className="mt-4">Selected: <strong>{file.name}</strong></div>}
+        {progress != null && <div className="mt-4">Uploading… {progress}%</div>}
       </div>
-      <div className="mt-4" style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:10}}>
+
+      <div className="mt-4" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
         <div>
           <div className="label">Title</div>
-          <input className="input full-width" value={title} onChange={e=>setTitle(e.target.value)} />
+          <input className="input full-width" value={title} onChange={(e) => setTitle(e.target.value)} />
         </div>
         <div>
           <div className="label">Description</div>
-          <input className="input full-width" value={description} onChange={e=>setDescription(e.target.value)} />
+          <input className="input full-width" value={description} onChange={(e) => setDescription(e.target.value)} />
         </div>
       </div>
-      <div className="mt-4"><button className="btn" onClick={add}>Add to Standards</button></div>
-      <div className="mt-4">
+
+      <div className="mt-4"><button className="btn" onClick={add} disabled={!title || !file}>Add to Standards</button></div>
+
+      <div className="mt-4 overflow-x-auto">
         <table className="table">
           <thead><tr><th>Title</th><th>Description</th><th>Link</th><th></th></tr></thead>
-          <tbody>
-            {list.map(s=> (
-              <tr key={s.id}>
-                <td>{s.title}</td>
-                <td>{s.description}</td>
-                <td><a href={s.url} target="_blank">Open</a></td>
-                <td><button className="btn-ghost" onClick={()=>del(s.id)}>Delete</button></td>
-              </tr>
-            ))}
-          </tbody>
+        <tbody>
+          {list.map(s => (
+            <tr key={s.id}>
+              <td>{s.title}</td>
+              <td>{s.description}</td>
+              <td><a href={s.url} target="_blank" rel="noreferrer">Open</a></td>
+              <td><button className="btn-ghost" onClick={() => del(s.id)}>Delete</button></td>
+            </tr>
+          ))}
+        </tbody>
         </table>
       </div>
     </section>
-    
-// components/admin/StandardsManager.tsx
-'use client';
-export default function StandardsManager() {
-  return (
-    <div className="card">
-      <h2 className="font-semibold mb-2">Standards</h2>
-      <p>Upload company standards and manage the list.</p>
-      <input type="file" multiple className="input mt-2" />
-    </div>
-
-// components/admin/DivisionsEditor.tsx
-'use client';
-export default function DivisionsEditor() {
-  return (
-    <div className="card">
-      <h2 className="font-semibold mb-2">CSI Divisions</h2>
-      <p>Edit division codes and labels.</p>
-      <form className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">
-        <input className="input" placeholder="CSI Code" />
-        <input className="input" placeholder="Label" />
-        <button className="btn">Add/Update</button>
-      </form>
-    </div>
-
-// components/admin/LeaderboardEditor.tsx
-'use client';
-export default function LeaderboardEditor() {
-  return (
-    <div className="card">
-      <h2 className="font-semibold mb-2">Leaderboard Editor</h2>
-      <p>Edit names, delete entries, and adjust XP/streaks.</p>
-    </div>
-
-// components/admin/QuestionBuilder.tsx
-'use client';
-export default function QuestionBuilder() {
-  return (
-    <div className="card">
-      <h2 className="font-semibold mb-2">Question Builder</h2>
-      <p>Create MCQs (4 choices), attach images/PDFs, and assign to lessons.</p>
-    </div>
   );
 }
