@@ -1,3 +1,4 @@
+// prisma/seed.ts
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
@@ -19,6 +20,7 @@ async function main() {
     [6, 'Regional Superintendent'],
   ];
 
+  // Project Management roles
   for (const [level, name] of pm) {
     await prisma.role.upsert({
       where: { system_level: { system: 'PROJECT_MANAGEMENT', level } },
@@ -27,6 +29,7 @@ async function main() {
     });
   }
 
+  // Site Supervision roles
   for (const [level, name] of ss) {
     await prisma.role.upsert({
       where: { system_level: { system: 'SITE_SUPERVISION', level } },
@@ -35,6 +38,7 @@ async function main() {
     });
   }
 
+  // Demo user
   await prisma.user.upsert({
     where: { id: 'demo-user' },
     update: {},
@@ -44,4 +48,11 @@ async function main() {
 
 main()
   .then(async () => {
-    c
+    console.log('Seed complete.');
+    await prisma.$disconnect();
+  })
+  .catch(async (e) => {
+    console.error(e);
+    await prisma.$disconnect();
+    process.exit(1);
+  });
