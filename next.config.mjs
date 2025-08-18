@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    viewTransition: true,
+    // keep anything else you need here
     serverActions: { allowedOrigins: ['*'] },
   },
 };
