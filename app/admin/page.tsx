@@ -1,11 +1,14 @@
 import { prisma } from '@/lib/prisma';
-import { createDivision, createLesson, createExercise } from './actions';
+import MCQForm from '@/components/admin/MCQForm';
+import { createDivision, createLesson, createMCQ, updateMCQ, deleteExercise, importCSV, addStandard } from './actions';
 
 export default async function AdminPage() {
-  const [divisions, roles, lessons] = await Promise.all([
+  const [divisions, roles, lessons, exercises, standards] = await Promise.all([
     prisma.division.findMany({ orderBy: { csiCode: 'asc' } }),
     prisma.role.findMany({ orderBy: [{ system: 'asc' }, { level: 'asc' }] }),
     prisma.lesson.findMany({ orderBy: [{ system: 'asc' }, { title: 'asc' }] }),
+    prisma.exercise.findMany({ orderBy: [{ lessonId: 'asc' }, { id: 'asc' }] }),
+    prisma.standard.findMany({ orderBy: [{ createdAt: 'desc' }] }),
   ]);
 
   const pmRoles = roles.filter(r => r.system === 'PROJECT_MANAGEMENT');
@@ -15,7 +18,7 @@ export default async function AdminPage() {
     <div className="space-y-6">
       <div className="card">
         <h1 className="text-xl font-bold mb-2">Admin • Authoring</h1>
-        <p className="text-gray-700">Create divisions, lessons, and exercises. Attach questions to lessons under Project Management or Site Supervision.</p>
+        <p className="text-gray-700">Create divisions, lessons, and multiple-choice questions with 4 choices. Upload images/PDFs, bulk import CSV, manage standards, and edit existing content.</p>
       </div>
 
       {/* Create Division */}
@@ -86,82 +89,124 @@ export default async function AdminPage() {
         </form>
       </div>
 
-      {/* Create Exercise */}
+      {/* New MCQ form with preview & drag-drop */}
       <div className="card">
-        <h2 className="font-semibold mb-3">New Exercise (Question)</h2>
-        <form action={createExercise} className="grid grid-cols-1 sm:grid-cols-6 gap-2 items-start">
-          <label className="flex flex-col text-sm sm:col-span-2">
-            <span className="mb-1">Lesson</span>
-            <select name="lessonId" className="input" required defaultValue="">
-              <option value="" disabled>Select lesson</option>
-              {lessons.map(l => (
-                <option key={l.id} value={l.id}>{l.system === 'PROJECT_MANAGEMENT' ? 'PM' : 'Site'} • {l.title}</option>
-              ))}
-            </select>
-          </label>
-
-          <label className="flex flex-col text-sm">
-            <span className="mb-1">Type</span>
-            <select name="type" className="input" required defaultValue="MCQ">
-              <option value="MCQ">Multiple Choice (MCQ)</option>
-              <option value="IMAGE_ID">Image-ID</option>
-              <option value="ORDERING">Ordering</option>
-              <option value="CALC">Unit/Calc</option>
-              <option value="TERMS">Terms</option>
-            </select>
-          </label>
-
-          <label className="flex flex-col text-sm sm:col-span-3">
-            <span className="mb-1">Prompt</span>
-            <input type="text" name="prompt" className="input" placeholder="Question text..." required />
-          </label>
-
-          <label className="flex flex-col text-sm sm:col-span-3">
-            <span className="mb-1">Data (JSON)</span>
-            <textarea name="data" className="input" rows={6} placeholder='{"choices":["A","B","C","D"]}' />
-          </label>
-          <label className="flex flex-col text-sm sm:col-span-3">
-            <span className="mb-1">Answer (JSON)</span>
-            <textarea name="answer" className="input" rows={6} placeholder='{"correctIndex":1}' />
-          </label>
-
-          <button className="btn btn-primary sm:col-span-6">Create Exercise</button>
-        </form>
-        <p className="text-xs text-gray-500 mt-2">
-          Hints: MCQ → <code>{"{"}"choices": string[], "imageUrl"?: string{"}"}</code> &nbsp;•&nbsp;
-          IMAGE_ID → <code>{"{"}"imageUrl": string, "hotspots": [{"{"}"id": "window-left", "x":0.3, "y":0.4{"}"}]{"}"}</code> &nbsp;•&nbsp;
-          ORDERING → <code>{"{"}"steps": string[]{"}"}</code> &nbsp;•&nbsp;
-          CALC → <code>{"{"}"unit":"ft","precision":2{"}"}</code> &nbsp;•&nbsp;
-          TERMS → <code>{"{"}"terms":[{"{"}"term":"HSS","definition":"..."{"}"}]{"}"}</code>
-        </p>
+        <h2 className="font-semibold mb-3">New Question (MCQ, 4 choices)</h2>
+        <MCQForm lessons={lessons} action={createMCQ} />
       </div>
 
-      {/* Existing Lessons Quick-Add */}
+      {/* CSV import */}
       <div className="card">
-        <h2 className="font-semibold mb-3">Lessons</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <h2 className="font-semibold mb-3">Bulk Import (CSV)</h2>
+        <form action={importCSV} className="grid grid-cols-1 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
+            <label className="flex flex-col text-sm">
+              <span className="mb-1">Default Lesson (if CSV has no lessonId)</span>
+              <select name="lessonId" className="input" defaultValue="">
+                <option value="">-- none --</option>
+                {lessons.map(l => (
+                  <option key={l.id} value={l.id}>{l.system==='PROJECT_MANAGEMENT'?'PM':'Site'} • {l.title}</option>
+                ))}
+              </select>
+            </label>
+            <div className="sm:col-span-2 text-xs text-gray-600">
+              Columns (header required): <code>prompt,choice1,choice2,choice3,choice4,correctIndex,lessonId?</code>
+            </div>
+          </div>
+          <textarea name="csv" className="input" rows={5} placeholder='prompt,choice1,choice2,choice3,choice4,correctIndex,lessonId
+What is the min slab thickness?,4",6",8",10",1,12
+...' />
+          <button className="btn btn-primary">Import CSV</button>
+        </form>
+      </div>
+
+      {/* Standards Admin */}
+      <div className="card">
+        <h2 className="font-semibold mb-3">Standards</h2>
+        <form action={addStandard} className="grid grid-cols-1 sm:grid-cols-6 gap-2 items-end mb-3">
+          <label className="flex flex-col text-sm sm:col-span-2">
+            <span className="mb-1">Title</span>
+            <input type="text" name="title" className="input" placeholder="Quality Manual" required />
+          </label>
+          <label className="flex flex-col text-sm sm:col-span-2">
+            <span className="mb-1">URL</span>
+            <input type="url" name="url" className="input" placeholder="https://..." required />
+          </label>
+          <label className="flex flex-col text-sm">
+            <span className="mb-1">Category</span>
+            <input type="text" name="category" className="input" placeholder="Safety / Quality / Spec" />
+          </label>
+          <button className="btn btn-primary">Add</button>
+        </form>
+        <div className="space-y-1">
+          {standards.map(s => (
+            <div key={s.id} className="text-sm">{s.title} — <a className="link" href={s.url} target="_blank" rel="noreferrer">{s.url}</a> <span className="text-[11px] text-gray-500">[{s.category}]</span></div>
+          ))}
+        </div>
+      </div>
+
+      {/* Questions DB */}
+      <div className="card">
+        <h2 className="font-semibold mb-3">Questions Database</h2>
+        <div className="space-y-4">
           {lessons.map(l => (
-            <div key={l.id} className="tile items-stretch">
-              <div className="text-left w-full">
-                <div className="text-sm font-semibold mb-1">{l.system === 'PROJECT_MANAGEMENT' ? 'PM' : 'Site'} • {l.title}</div>
-                <form action={createExercise} className="grid grid-cols-1 gap-2">
-                  <input type="hidden" name="lessonId" value={l.id} />
-                  <div className="grid grid-cols-3 gap-2">
-                    <select name="type" className="input text-[13px]" defaultValue="MCQ">
-                      <option value="MCQ">MCQ</option>
-                      <option value="IMAGE_ID">IMG</option>
-                      <option value="ORDERING">Order</option>
-                      <option value="CALC">Calc</option>
-                      <option value="TERMS">Terms</option>
-                    </select>
-                    <input type="text" name="prompt" className="input col-span-2 text-[13px]" placeholder="Prompt..." required />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <textarea name="data" className="input text-[12px]" rows={3} placeholder='{"choices":["A","B","C"]}' />
-                    <textarea name="answer" className="input text-[12px]" rows={3} placeholder='{"correctIndex":0}' />
-                  </div>
-                  <div><button className="btn btn-primary w-full text-sm">Add Question</button></div>
-                </form>
+            <div key={l.id}>
+              <div className="font-semibold mb-2">{l.system==='PROJECT_MANAGEMENT'?'PM':'Site'} • {l.title}</div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm border-separate border-spacing-y-2">
+                  <thead>
+                    <tr className="text-left text-xs text-gray-500">
+                      <th className="px-2">ID</th>
+                      <th className="px-2">Prompt</th>
+                      <th className="px-2">Choices</th>
+                      <th className="px-2">Correct</th>
+                      <th className="px-2">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {exercises.filter(e=>e.lessonId===l.id).map(e => {
+                      const data = (e.data as any) || {};
+                      const choices = (data.choices as string[]) || [];
+                      const correct = (e.answer as any)?.correctIndex ?? 0;
+                      return (
+                        <tr key={e.id}>
+                          <td className="px-2 align-top">{e.id}</td>
+                          <td className="px-2 align-top w-[30%]">
+                            <form action={updateMCQ} className="space-y-1">
+                              <input type="hidden" name="id" value={e.id} />
+                              <input type="text" name="prompt" defaultValue={e.prompt} className="input w-full" />
+                          </form></td>
+                          <td className="px-2 align-top w-[40%]">
+                            <form action={updateMCQ} className="grid grid-cols-2 gap-1">
+                              <input type="hidden" name="id" value={e.id} />
+                              <input type="text" name="choice1" defaultValue={choices[0]||''} className="input text-[12px]" />
+                              <input type="text" name="choice2" defaultValue={choices[1]||''} className="input text-[12px]" />
+                              <input type="text" name="choice3" defaultValue={choices[2]||''} className="input text-[12px]" />
+                              <input type="text" name="choice4" defaultValue={choices[3]||''} className="input text-[12px]" />
+                              <div className="col-span-2 flex items-center gap-2 text-xs">
+                                Correct:
+                                {[0,1,2,3].map(i => (
+                                  <label key={i} className="flex items-center gap-1">
+                                    <input type="radio" name="correctIndex" value={i} defaultChecked={i===correct} className="accent-blue-600" />
+                                    {String.fromCharCode(65+i)}
+                                  </label>
+                                ))}
+                              </div>
+                              <div className="col-span-2"><button className="btn btn-primary btn-xs">Save</button></div>
+                            </form>
+                          </td>
+                          <td className="px-2 align-top">{String.fromCharCode(65+correct)}</td>
+                          <td className="px-2 align-top">
+                            <form action={deleteExercise}>
+                              <input type="hidden" name="id" value={e.id} />
+                              <button className="btn btn-danger btn-xs">Delete</button>
+                            </form>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             </div>
           ))}

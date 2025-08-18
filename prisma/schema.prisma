@@ -140,3 +140,12 @@ model UserBadge {
   badge   Badge @relation(fields: [badgeId], references: [id])
   @@unique([userId, badgeId])
 }
+
+
+model Standard {
+  id        Int      @id @default(autoincrement())
+  title     String
+  url       String
+  category  String   // e.g., 'Safety', 'Quality', 'Spec', 'Company'
+  createdAt DateTime @default(now())
+}

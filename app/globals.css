@@ -83,3 +83,15 @@ body::before {
 /* Admin inputs */
 .input{ @apply rounded-xl border border-[rgba(17,24,39,0.12)] bg-white/80 px-3 py-2; }
 .input:focus{ outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.25); border-color: rgba(59,130,246,0.45);} 
+
+
+/* Admin file input */
+.file-input {
+  @apply rounded-xl border border-[rgba(17,24,39,0.12)] bg-white/80 px-3 py-2;
+}
+
+
+.btn-xs{ padding: 4px 8px; border-radius: 10px; }
+.btn-danger{ @apply bg-red-600 text-white; }
+.btn-danger:hover{ filter: brightness(0.95); }
+.link{ color: #0ea5e9; text-decoration: underline; }

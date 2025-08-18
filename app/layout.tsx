@@ -28,7 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <Link href="/" className="hover:underline">Home</Link>
                 <Link href="/leaderboard" className="hover:underline">Leaderboard</Link>
                 <Link href="/install" className="hover:underline">Install App</Link>
-                <a href="https://www.csiresources.org/standards/masterformat" target="_blank" rel="noreferrer" className="hover:underline">CSI MasterFormat</a>
+                <a href="/standards" target="_blank" rel="noreferrer" className="hover:underline">CSI MasterFormat</a>
                 <ThemeToggle />
               </nav>
             </div>

@@ -24,8 +24,8 @@ export default async function HomePage() {
               <IconTile label="Continue Site" href="/system/SITE_SUPERVISION" icon="site" vtName="vt-site" />
               <IconTile label="Leaderboard" href="/leaderboard" icon="leaderboard" />
               <IconTile label="Admin" href="/admin" icon="admin" />
-              <IconTile label="Install App" href="/install" icon="bolt" />
-              <IconTile label="Standards" href="https://www.csiresources.org/standards/masterformat" icon="cap" />
+              <IconTile label="Install App" href="/install" icon="bolt" />\n          <IconTile label="OSHA" href="https://www.osha.gov/training" icon="osha" />\n          <IconTile label="Building Codes" href="https://codes.iccsafe.org/" icon="codes" />
+              <IconTile label="Standards" href="/standards" icon="cap" />
             </div>
           </div>
         </div>
