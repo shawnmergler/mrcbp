@@ -45,7 +45,7 @@ enum StandardCategory {
 
 model User {
   id           String      @id @default(cuid())
-  email        String      @unique
+  email        String?      @unique
   role         Role        @default(USER)
   displayName  String?
   image        String?
@@ -94,13 +94,13 @@ model Section {
 
 model Lesson {
   id            Int          @id @default(autoincrement())
-  sectionId     Int
+  sectionId     Int?
   divisionId    Int?         // optional CSI division mapping
   title         String
   description   String?
   order         Int          @default(0)
 
-  section       Section      @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  section    Section? @relation(fields: [sectionId], references: [id])
   division      CSIDivision? @relation(fields: [divisionId], references: [id], onDelete: SetNull)
 
   exercises     Exercise[]
