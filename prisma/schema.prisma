@@ -3,12 +3,14 @@ generator client {
 }
 
 datasource db {
-  provider     = "postgresql"
-  url          = env("DATABASE_URL")
-  relationMode = "foreignKeys"
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_DIRECT_URL") // optional, but nice for Prisma
 }
 
-/* ─────────────── Enums ─────────────── */
+/**
+ * ─────────────── Enums ───────────────
+ */
 
 enum ExerciseType {
   // legacy (keep so old rows remain valid)
@@ -27,129 +29,129 @@ enum ExerciseType {
   DRAG_DROP
 }
 
-/* ─────────────── Models ─────────────── */
+/**
+ * ─────────────── Models ───────────────
+ */
 
 model User {
   id            String    @id @default(cuid()) // keep String to match existing FKs
-  email         String?                         // keep optional; existing NULLs
+  email         String? // keep optional; existing NULLs
   name          String?
   displayName   String?
-  lastActiveUTC DateTime?                       // legacy column retained
-  xp            Int        @default(0)
-  streak        Int?                              // legacy column preserved
-  createdAt     DateTime   @default(now())
+  lastActiveUTC DateTime? // legacy column retained
+  xp            Int       @default(0)
+  streak        Int? // legacy column preserved
+  createdAt     DateTime  @default(now())
 
   // relations
-  attempts      Attempt[]
-  srsItems      SRSItem[]
-  progress      Progress[]
-  leaderboard   LeaderboardEntry[]
+  attempts    Attempt[]
+  srsItems    SRSItem[]
+  progress    Progress[]
+  leaderboard LeaderboardEntry[]
+  Role        Role?              @relation(fields: [roleId], references: [id])
+  roleId      Int?
 }
 
 model Section {
-  id        Int       @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   title     String
   position  Int?
-  createdAt DateTime  @default(now())
+  createdAt DateTime @default(now())
 
-  lessons   Lesson[]
+  lessons Lesson[]
 }
 
 model Division {
-  id       Int       @id @default(autoincrement())
+  id      Int     @id @default(autoincrement())
   // keep original DB column names to avoid drop
-  csiCode  String?
-  name     String?
+  csiCode String?
+  name    String?
 
   // ✅ back-relation for Lesson.division
-  lessons  Lesson[]
+  lessons Lesson[]
 }
 
 model Lesson {
-  id          Int        @id @default(autoincrement())
+  id          Int     @id @default(autoincrement())
   title       String
   description String?
-  system      String?
+  order       Int     @default(0)
+  slug        String? // legacy
 
-  // new hierarchy (optional)
-  sectionId   Int?
-  section     Section?   @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+  // legacy Division linkage (optional)
 
-  // legacy hierarchy (optional)
-  divisionId  Int?
-  division    Division?  @relation(fields: [divisionId], references: [id], onDelete: SetNull)
+  divisionId Int?
+  division   Division? @relation(fields: [divisionId], references: [id], onDelete: SetNull)
 
-  slug        String?     // legacy
-  system      String?     // keep as String to match DB
-  createdAt   DateTime    @default(now())
+  sectionId Int?
+  section   Section? @relation(fields: [sectionId], references: [id], onDelete: SetNull)
 
-  // back-relations
-  exercises   Exercise[]
-  progress    Progress[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@index([sectionId])
-  @@index([divisionId])
+  exercises Exercise[]
+  progress  Progress[]
 }
 
 model Exercise {
-  id          Int           @id @default(autoincrement())
-  lessonId    Int?
-  lesson      Lesson?       @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  id       Int     @id @default(autoincrement())
+  lessonId Int?
+  lesson   Lesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
 
   type        ExerciseType
   prompt      String
-  explanation String?       // optional (safe)
+  explanation String? // optional (safe)
 
   // legacy payloads kept
-  answer      Json?
-  data        Json?
+  answer Json?
+  data   Json?
 
-  createdAt   DateTime      @default(now())
+  createdAt DateTime @default(now())
 
   // back-relations
-  attempts    Attempt[]     @relation("ExerciseAttempts")
-  srsItems    SRSItem[]     @relation("ExerciseSRS")
+  attempts Attempt[] @relation("ExerciseAttempts")
+  srsItems SRSItem[] @relation("ExerciseSRS")
 
   @@index([lessonId])
 }
 
 model Attempt {
-  id          Int       @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-  userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  exerciseId  Int
-  exercise    Exercise  @relation("ExerciseAttempts", fields: [exerciseId], references: [id], onDelete: Cascade)
+  exerciseId Int
+  exercise   Exercise @relation("ExerciseAttempts", fields: [exerciseId], references: [id], onDelete: Cascade)
 
-  correct     Boolean
-  response    Json?       // legacy
-  createdAt   DateTime    @default(now())
+  correct   Boolean
+  response  Json? // legacy
+  createdAt DateTime @default(now())
 
   @@index([userId])
   @@index([exerciseId])
 }
 
 model SRSItem {
-  id             Int       @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-  userId         String
-  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  exerciseId     Int
-  exercise       Exercise  @relation("ExerciseSRS", fields: [exerciseId], references: [id], onDelete: Cascade)
+  exerciseId Int
+  exercise   Exercise @relation("ExerciseSRS", fields: [exerciseId], references: [id], onDelete: Cascade)
 
   // legacy columns preserved
-  dueDate        DateTime?
-  interval       Int?
-  ef             Float?
-  reps           Int        @default(0) @map("repetition") // map to legacy column name
+  dueDate  DateTime?
+  interval Int?
+  ef       Float?
+  reps     Int       @default(0) @map("repetition") // map to legacy column name
 
   // optional extras (safe)
   lastReviewedAt DateTime?
   nextReviewAt   DateTime?
 
-  createdAt      DateTime   @default(now())
+  createdAt DateTime @default(now())
 
   // avoid adding unique during build
   // @@unique([userId, exerciseId])
@@ -161,13 +163,13 @@ model SRSItem {
 }
 
 model Progress {
-  id        Int      @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  lessonId  Int
-  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lessonId Int
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   status    String?
   updatedAt DateTime @default(now()) // has default, safe
@@ -177,14 +179,14 @@ model Progress {
 }
 
 model LeaderboardEntry {
-  id        Int      @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  name      String?
-  xp        Int      @default(0)
-  streak    Int      @default(0)
+  name   String?
+  xp     Int     @default(0)
+  streak Int     @default(0)
 
   createdAt DateTime @default(now())
 
@@ -203,17 +205,19 @@ model Standard {
 
 model Badge {
   id          Int      @id @default(autoincrement())
-  name        String    // no @unique to avoid adding constraint in prod
-  code        String?   // legacy column kept
+  name        String // no @unique to avoid adding constraint in prod
+  code        String? // legacy column kept
   icon        String?
   description String?
   createdAt   DateTime @default(now())
 }
 
 model Role {
-  id          Int      @id @default(autoincrement())
-  name        String    // no @unique to avoid adding constraint
-  description String?
-  level       Int?      // legacy column kept
-  system      String?  @ignore
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  // keep as String to match existing column; remove enum duplicate if present
+  system    String?  @db.VarChar(50) //
+  users     User[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
