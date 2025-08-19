@@ -1,0 +1,40 @@
+name: Fix Prisma System enum
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install deps (Prisma CLI used to format)
+        run: npm i -D prisma@6 @prisma/client@6
+
+      - name: Apply schema fix
+        run: node scripts/fix-prisma-system-enum.mjs
+
+      - name: Format Prisma schema
+        run: npx prisma format
+
+      - name: Create PR
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "fix(prisma): map Lesson/Role.system back to DB enum + add Division.lessons backrel"
+          title: "Fix Prisma System enum mapping and back-relations"
+          body: |
+            - Adds `SystemLegacy` Prisma enum mapped to DB enum `System`
+            - Switches `Lesson.system` and `Role.system` to `SystemLegacy?`
+            - Ensures `Division.lessons` back-relation exists
+            - Runs `prisma format`
+          branch: fix/prisma-system-enum
+          delete-branch: true

@@ -24,4 +24,7 @@
     "@types/node": "20.12.12",
     "@types/react": "18.3.3"
   }
+
+  "scripts": {
+  "fix:prisma-system": "node scripts/fix-prisma-system-enum.mjs && prisma format"
 }
