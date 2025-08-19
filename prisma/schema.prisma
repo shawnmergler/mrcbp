@@ -92,30 +92,28 @@ model Lesson {
 }
 
 model Attempt {
-   id          Int       @id @default(autoincrement())
-   userId      Int
-   exerciseId  Int
--  exercise    Exercise  @relation(fields: [exerciseId], references: [id])
-+  exercise    Exercise  @relation("ExerciseAttempts", fields: [exerciseId], references: [id])
-   correct     Boolean
-   createdAt   DateTime  @default(now())
- }
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  exerciseId  Int
+  exercise    Exercise  @relation("ExerciseAttempts", fields: [exerciseId], references: [id])
+  correct     Boolean
+  createdAt   DateTime  @default(now())
+}
 
 model Exercise {
-   id          Int           @id @default(autoincrement())
-   lessonId    Int
-   lesson      Lesson        @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-   type        ExerciseType
-   prompt      String
--  // explanation optional if you want it
-+  explanation String?
-   createdAt   DateTime      @default(now())
-   updatedAt   DateTime      @updatedAt
+  id           Int           @id @default(autoincrement())
+  lessonId     Int
+  lesson       Lesson        @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  type         ExerciseType
+  prompt       String
+  explanation  String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
-+  // back-relations
-+  attempts    Attempt[]     @relation("ExerciseAttempts")
-+  srsItems    SRSItem[]     @relation("ExerciseSRS")
- }
+  // back-relations
+  attempts     Attempt[]     @relation("ExerciseAttempts")
+  srsItems     SRSItem[]     @relation("ExerciseSRS")
+}
 
 model Progress {
   id        Int      @id @default(autoincrement())
@@ -131,16 +129,15 @@ model Progress {
 }
 
  model SRSItem {
-   id          Int       @id @default(autoincrement())
-   userId      Int
-   exerciseId  Int
--  exercise    Exercise  @relation(fields: [exerciseId], references: [id])
-+  exercise    Exercise  @relation("ExerciseSRS", fields: [exerciseId], references: [id])
-   repetition  Int       @default(0)
-   interval    Int       @default(1)  // days
-   ease        Float     @default(2.5)
-   dueAt       DateTime  @default(now())
- }
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  exerciseId  Int
+  exercise    Exercise  @relation("ExerciseSRS", fields: [exerciseId], references: [id])
+  repetition  Int       @default(0)
+  interval    Int       @default(1)   // days
+  ease        Float     @default(2.5)
+  dueAt       DateTime  @default(now())
+}
 
 model Badge {
   id          Int         @id @default(autoincrement())
