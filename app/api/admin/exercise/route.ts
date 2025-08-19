@@ -35,8 +35,8 @@ export async function POST(req: Request) {
     }
 
     const ex = await prisma.exercise.create({
-      data: { lessonId, type, prompt, explanation: explanation ?? null }
-    });
+    data: { lessonId, type, prompt, explanation: explanation || null }
+});
 
     // Attach children per type
     switch(type){
