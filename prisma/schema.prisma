@@ -58,6 +58,8 @@ model User {
   srsItems     SRSItem[]
   progress     Progress[]
 
+  leaderboardEntries LeaderboardEntry[] @relation("UserLeaderboardEntries")
+
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt @default(now())
 }
@@ -310,7 +312,7 @@ model LeaderboardEntry {
   points      Int       @default(0)
   avatarUrl   String?
 
-  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+ user        User?     @relation("UserLeaderboardEntries", fields: [userId], references: [id], onDelete: SetNull)
 
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt @default(now())
