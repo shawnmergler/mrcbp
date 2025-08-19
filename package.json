@@ -1,25 +1,50 @@
-{
-  "name": "marmol-radziner-construction-bp",
-  "version": "0.5.0",
-  "private": true,
-  "scripts": {
-    "postinstall": "prisma generate",
-    "dev": "next dev",
-    "build": "prisma db push && tsx prisma/seed.ts && next build",
-    "start": "next start"
-  },
-  "dependencies": {
-    "@prisma/client": "5.22.0",
-    "@vercel/blob": "0.27.0",
-    "next": "14.2.5",
-    "react": "18.3.1",
-    "react-dom": "18.3.1"
-  },
-  "devDependencies": {
-    "prisma": "5.22.0",
-    "tsx": "4.19.2",
-    "typescript": "5.5.4",
-    "@types/node": "20.12.12",
-    "@types/react": "18.3.3"
-  }
+// app/admin/login/page.tsx
+import Link from 'next/link';
+import { loginAction } from './actions';
+
+export default function AdminLoginPage() {
+  return (
+    <main className="container mx-auto p-4">
+      <section className="card max-w-md mx-auto">
+        <h1 className="text-xl font-semibold mb-1">Admin Sign In</h1>
+        <p className="text-sm text-gray-600 mb-4">
+          Enter your admin credentials to continue.
+        </p>
+
+        <form action={loginAction} className="grid gap-3">
+          <label className="grid gap-1">
+            <span className="label">Username</span>
+            <input
+              name="username"
+              className="input"
+              autoComplete="username"
+              required
+            />
+          </label>
+
+          <label className="grid gap-1">
+            <span className="label">Password</span>
+            <input
+              name="password"
+              type="password"
+              className="input"
+              autoComplete="current-password"
+              required
+            />
+          </label>
+
+          <button type="submit" className="btn">Sign in</button>
+        </form>
+
+        <div className="mt-4 text-xs text-gray-500">
+          Wrong credentials will send you back to the home page with a retry
+          banner—just come back here to try again.
+        </div>
+
+        <div className="mt-4">
+          <Link href="/" className="btn-ghost">← Back to Home</Link>
+        </div>
+      </section>
+    </main>
+  );
 }
