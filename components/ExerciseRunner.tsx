@@ -11,7 +11,10 @@ export default function ExerciseRunner({ exercises, lessonSlug, userId }:{ exerc
   const [calcValue, setCalcValue] = useState<string>("");
 
   const ex = exercises[index];
-  const progress = useMemo(() => Math.round(((index)/exercises.length)*100), [index, exercises.length]);
+  const progress = useMemo(
+    () => (exercises.length > 1 ? Math.round((index / (exercises.length - 1)) * 100) : 100),
+    [index, exercises.length],
+  );
 
   const submit = useCallback(async () => {
     if (!ex) return;
