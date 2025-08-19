@@ -3,159 +3,318 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  relationMode = "foreignKeys"
+}
+
+//////////////////////////////////////////////////////
+// Enums
+//////////////////////////////////////////////////////
+
+enum Role {
+  USER
+  ADMIN
 }
 
 enum ExerciseType {
-  MULTIPLE_CHOICE
-  TRUE_FALSE
-  FILL_IN_THE_BLANK
-  ORDERING
-  MATCHING
-  HOTSPOT
-  FREE_RESPONSE
+  MCQ_SINGLE     // one correct choice
+  MCQ_MULTI      // multiple correct choices
+  MATCHING       // left/right pairs
+  ORDER          // order/sort items
+  HOTSPOT        // click/tap hotspot(s)
+  SHORT_TEXT     // short free text; pattern-matched
+  NUMERIC        // numeric answer / range
 }
 
-enum TrainingSystem {
-  PROJECT_MANAGEMENT
-  SITE_SUPERVISION
+enum MatchType {
+  EXACT
+  CONTAINS
+  REGEX
 }
+
+enum StandardCategory {
+  OSHA
+  BUILDING_CODE
+  OTHER
+}
+
+//////////////////////////////////////////////////////
+// Core Auth / Users
+//////////////////////////////////////////////////////
 
 model User {
-  id            String      @id
-  email         String?     @unique
-  displayName   String?
-  attempts      Attempt[]
-  progress      Progress[]
-  srsItems      SRSItem[]
-  xp            Int         @default(0)
-  streak        Int         @default(0)
-  lastActiveUTC DateTime?
-  userBadges    UserBadge[]
-  role          UserRole?
-  createdAt     DateTime    @default(now())
+  id           String      @id @default(cuid())
+  email        String      @unique
+  role         Role        @default(USER)
+  displayName  String?
+  image        String?
+
+  xp           Int         @default(0)
+  streak       Int         @default(0)
+  lastSeenAt   DateTime?
+
+  attempts     Attempt[]
+  srsItems     SRSItem[]
+  progress     Progress[]
+
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt @default(now())
 }
 
-model Role {
-  id      Int         @id @default(autoincrement())
-  system  TrainingSystem
-  name    String
-  level   Int
-  users   UserRole[]
-  lessons Lesson[]
+//////////////////////////////////////////////////////
+// Content Structure
+//////////////////////////////////////////////////////
 
-  @@unique([system, level], name: "system_level")
+model CSIDivision {
+  id         Int       @id @default(autoincrement())
+  code       String    @unique    // e.g. "03", "09", "26"
+  label      String               // e.g. "Concrete", "Finishes", "Electrical"
+  order      Int       @default(0)
+
+  lessons    Lesson[]
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt @default(now())
 }
 
-model UserRole {
-  id     Int   @id @default(autoincrement())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id])
-  roleId Int
-  role   Role   @relation(fields: [roleId], references: [id])
-}
+model Section {
+  id         Int       @id @default(autoincrement())
+  title      String
+  slug       String    @unique
+  order      Int       @default(0)
 
-model Division {
-  id       Int      @id @default(autoincrement())
-  csiCode  Int
-  name     String
-  lessons  Lesson[]
+  lessons    Lesson[]
 
-  @@unique([csiCode])
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt @default(now())
 }
 
 model Lesson {
-  id          Int     @id @default(autoincrement())
-  divisionId  Int
-  division    Division @relation(fields: [divisionId], references: [id])
-  system      TrainingSystem
-  roleId      Int?
-  role        Role?    @relation(fields: [roleId], references: [id])
-  title       String
-  slug        String   @unique
-  description String?
-  exercises   Exercise[]
-  progress    Progress[]
+  id            Int          @id @default(autoincrement())
+  sectionId     Int
+  divisionId    Int?         // optional CSI division mapping
+  title         String
+  description   String?
+  order         Int          @default(0)
+
+  section       Section      @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  division      CSIDivision? @relation(fields: [divisionId], references: [id], onDelete: SetNull)
+
+  exercises     Exercise[]
+  progress      Progress[]
+
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt @default(now())
+
+  @@index([sectionId])
+  @@index([divisionId])
 }
+
+//////////////////////////////////////////////////////
+// Exercises (Questions) + Per-type payloads
+//////////////////////////////////////////////////////
+
+model Exercise {
+  id           Int            @id @default(autoincrement())
+  lessonId     Int
+  type         ExerciseType
+  prompt       String
+  explanation  String?        // shown after submit
+  mediaUrl     String?        // optional image/pdf/video
+  points       Int            @default(1)
+
+  lesson       Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  // Per-type child records
+  choices      Choice[]       // for MCQ_SINGLE / MCQ_MULTI
+  matchPairs   MatchPair[]    // for MATCHING
+  orderItems   OrderItem[]    // for ORDER
+  hotspots     Hotspot[]      // for HOTSPOT
+  textAnswers  AcceptAnswer[] // for SHORT_TEXT
+  numericSpec  NumericSpec?   // for NUMERIC
+
+  // Back-relations (needed by Prisma)
+  attempts     Attempt[]      @relation("ExerciseAttempts")
+  srsItems     SRSItem[]      @relation("ExerciseSRS")
+
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt @default(now())
+
+  @@index([lessonId])
+}
+
+// Multiple-choice option (single or multi)
+model Choice {
+  id          Int      @id @default(autoincrement())
+  exerciseId  Int
+  idx         Int      @default(0)
+  text        String
+  correct     Boolean  @default(false)
+  rationale   String?  // optional choice-level explanation
+
+  exercise    Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@unique([exerciseId, idx])
+  @@index([exerciseId])
+}
+
+// Matching pairs
+model MatchPair {
+  id          Int      @id @default(autoincrement())
+  exerciseId  Int
+  leftText    String
+  rightText   String
+  idx         Int      @default(0)
+
+  exercise    Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@unique([exerciseId, idx])
+  @@index([exerciseId])
+}
+
+// Ordering items
+model OrderItem {
+  id              Int      @id @default(autoincrement())
+  exerciseId      Int
+  text            String
+  correctPosition Int
+
+  exercise        Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@unique([exerciseId, correctPosition])
+  @@index([exerciseId])
+}
+
+// Hotspot (normalized 0..1 coords)
+model Hotspot {
+  id          Int      @id @default(autoincrement())
+  exerciseId  Int
+  // rectangle; if you need polygon later, add JSON points
+  x           Float    // left
+  y           Float    // top
+  w           Float    // width
+  h           Float    // height
+  idx         Int      @default(0)
+
+  exercise    Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@unique([exerciseId, idx])
+  @@index([exerciseId])
+}
+
+// Accepted short-text answers (case/regex options)
+model AcceptAnswer {
+  id          Int       @id @default(autoincrement())
+  exerciseId  Int
+  value       String    // pattern or literal
+  matchType   MatchType @default(EXACT)
+  caseSensitive Boolean @default(false)
+
+  exercise    Exercise  @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@index([exerciseId])
+}
+
+// Numeric single answer or range (+/- tolerance)
+model NumericSpec {
+  id           Int      @id @default(autoincrement())
+  exerciseId   Int      @unique
+  min          Float?
+  max          Float?
+  value        Float?
+  tolerance    Float?   // +/- margin
+
+  exercise     Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+}
+
+//////////////////////////////////////////////////////
+// Attempts / SRS / Progress
+//////////////////////////////////////////////////////
 
 model Attempt {
   id          Int       @id @default(autoincrement())
-  userId      String    // was Int
-  user        User      @relation(fields: [userId], references: [id])
+  userId      String
   exerciseId  Int
-  exercise    Exercise  @relation("ExerciseAttempts", fields: [exerciseId], references: [id])
   correct     Boolean
-  createdAt   DateTime  @default(now())
-}
+  score       Int?      // optional partial credit
+  payload     Json?     // submitted answer(s)
+  durationMs  Int?      // time spent
+  submittedAt DateTime  @default(now())
 
-model Exercise {
-  id           Int           @id @default(autoincrement())
-  lessonId     Int
-  lesson       Lesson        @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  type         ExerciseType
-  prompt       String
-  explanation  String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise    Exercise  @relation("ExerciseAttempts", fields: [exerciseId], references: [id], onDelete: Cascade)
 
-  // back-relations
-  attempts     Attempt[]     @relation("ExerciseAttempts")
-  srsItems     SRSItem[]     @relation("ExerciseSRS")
-}
-
-model Progress {
-  id        Int      @id @default(autoincrement())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  lessonId  Int
-  lesson    Lesson   @relation(fields: [lessonId], references: [id])
-  percent   Float    @default(0)
-  updatedAt DateTime @updatedAt
-  createdAt DateTime @default(now())
-
-  @@unique([userId, lessonId])
+  @@index([userId])
+  @@index([exerciseId])
+  @@index([submittedAt])
 }
 
 model SRSItem {
-  id          Int       @id @default(autoincrement())
-  userId      String    // was Int
-  user        User      @relation(fields: [userId], references: [id])
-  exerciseId  Int
-  exercise    Exercise  @relation("ExerciseSRS", fields: [exerciseId], references: [id])
-  repetition  Int       @default(0)
-  interval    Int       @default(1)
-  ease        Float     @default(2.5)
-  dueAt       DateTime  @default(now())
+  id           Int       @id @default(autoincrement())
+  userId       String
+  exerciseId   Int
+  repetition   Int       @default(0)
+  intervalDays Int       @default(0)
+  easiness     Float     @default(2.5) // SM-2 starting EF
+  dueAt        DateTime?
+
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise     Exercise  @relation("ExerciseSRS", fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt @default(now())
+
+  @@unique([userId, exerciseId])
+  @@index([dueAt])
 }
 
-model Badge {
-  id          Int         @id @default(autoincrement())
-  code        String      @unique
-  name        String
-  description String
-  users       UserBadge[]
+model Progress {
+  id         Int       @id @default(autoincrement())
+  userId     String
+  lessonId   Int
+  percent    Int       @default(0) // 0-100
+  completed  Boolean   @default(false)
+  completedAt DateTime?
+
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson     Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt @default(now())
+
+  @@unique([userId, lessonId])
+  @@index([lessonId])
 }
 
-model UserBadge {
-  id      Int   @id @default(autoincrement())
-  userId  String
-  user    User  @relation(fields: [userId], references: [id])
-  badgeId Int
-  badge   Badge @relation(fields: [badgeId], references: [id])
-
-  @@unique([userId, badgeId])
-}
+//////////////////////////////////////////////////////
+// Standards & Leaderboard
+//////////////////////////////////////////////////////
 
 model Standard {
-  id          Int      @id @default(autoincrement())
+  id          Int               @id @default(autoincrement())
   title       String
-  url        String
-  mime        String?
   description String?
-  category    String?
+  url         String
+  mime        String?
+  category    StandardCategory  @default(OTHER)
 
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt @default(now())
+}
 
-  createdAt   DateTime @default(now())
+model LeaderboardEntry {
+  id          Int       @id @default(autoincrement())
+  userId      String?   // optional: can link to a user
+  displayName String
+  points      Int       @default(0)
+  avatarUrl   String?
+
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt @default(now())
+
+  @@index([userId])
+  @@index([points])
 }
