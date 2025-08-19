@@ -72,25 +72,19 @@ model Division {
 }
 
 model Lesson {
-  id          Int     @id @default(autoincrement())
+  id          Int        @id @default(autoincrement())
   title       String
   description String?
-  order       Int     @default(0)
   slug        String? // legacy
-
-  // legacy Division linkage (optional)
-
-  divisionId Int?
-  division   Division? @relation(fields: [divisionId], references: [id], onDelete: SetNull)
-
-  sectionId Int?
-  section   Section? @relation(fields: [sectionId], references: [id], onDelete: SetNull)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  exercises Exercise[]
-  progress  Progress[]
+  system      String?
+  sectionId   Int?
+  divisionId  Int? // legacy
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  Section     Section?   @relation(fields: [sectionId], references: [id])
+  Division    Division?  @relation(fields: [divisionId], references: [id])
+  Exercise    Exercise[]
+  Progress    Progress[]
 }
 
 model Exercise {
@@ -215,8 +209,7 @@ model Badge {
 model Role {
   id        Int      @id @default(autoincrement())
   name      String   @unique
-  // keep as String to match existing column; remove enum duplicate if present
-  system    String?  @db.VarChar(50) //
+  system    String?
   users     User[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
