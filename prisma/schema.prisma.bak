@@ -3,9 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-  // directUrl = env("DATABASE_DIRECT_URL") // optional, but nice for Prisma
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_DIRECT_URL") // optional, but nice for Prisma
 }
 
 /**
@@ -72,22 +72,19 @@ model Division {
 }
 
 model Lesson {
-  id          Int       @id @default(autoincrement())
+  id          Int        @id @default(autoincrement())
   title       String
   description String?
+  slug        String? // legacy
+  system      String?
   sectionId   Int?
-  divisionId  Int?
-  division    Division? @relation(fields: [divisionId], references: [id], onDelete: SetNull)
-
-  slug   String? // legacy
-  system String? // keep as String to match existing DB values
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  exercises Exercise[]
-  progress  Progress[]
-  Section   Section?   @relation(fields: [sectionId], references: [id])
+  divisionId  Int? // legacy
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  Section     Section?   @relation(fields: [sectionId], references: [id])
+  Division    Division?  @relation(fields: [divisionId], references: [id])
+  Exercise    Exercise[]
+  Progress    Progress[]
 }
 
 model Exercise {
