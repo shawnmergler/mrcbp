@@ -1,5 +1,19 @@
-import { PrismaClient, TrainingSystem } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
+
+async function main() {
+  // Ensure a default Section exists
+  const defaultSection = await prisma.section.upsert({
+    where: { slug: 'general' },
+    update: {},
+    create: { title: 'General', slug: 'general', order: 0 }
+  });
+
+  // Attach any legacy lessons without a section
+  await prisma.lesson.updateMany({
+    where: { sectionId: null },
+    data:  { sectionId: defaultSection.id }
+  });
 
 async function main() {
   // Roles
@@ -79,6 +93,8 @@ async function main() {
     create: { id: 'demo', displayName: 'Demo User', xp: 50, streak: 2 }
   });
 }
+
+  main().finally(() => prisma.$disconnect());
 
 main()
   .then(async () => { await prisma.$disconnect(); })
