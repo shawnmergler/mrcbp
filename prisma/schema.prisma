@@ -8,12 +8,10 @@ datasource db {
   relationMode = "foreignKeys"
 }
 
-/**
- * Keep legacy enum values so old rows remain valid,
- * and include advanced types you’re using now.
- */
+/* ───────────────────── Enums ───────────────────── */
+
 enum ExerciseType {
-  // legacy
+  // legacy (keep so old rows remain valid)
   MCQ
   IMAGE_ID
   ORDERING
@@ -29,16 +27,17 @@ enum ExerciseType {
   DRAG_DROP
 }
 
-/* ─────────────────────────  CORE MODELS  ───────────────────────── */
+/* ───────────────────── Core Models ───────────────────── */
 
 model User {
-  id            String   @id @default(cuid())      // stays String to match existing FK types
-  email         String?  @unique                   // keep optional (existing NULLs)
+  id            String    @id @default(cuid()) // keep String to match existing FKs
+  email         String?                          // keep optional; existing NULLs in DB
   name          String?
   displayName   String?
-  lastActiveUTC DateTime?                          // legacy column retained
-  xp            Int       @default(0)
-  createdAt     DateTime  @default(now())          // safe to add/keep (has default)
+  lastActiveUTC DateTime?                        // legacy column retained
+  xp            Int        @default(0)
+  streak        Int?                               // legacy column preserved
+  createdAt     DateTime   @default(now())
 
   // relations
   attempts      Attempt[]
@@ -48,67 +47,68 @@ model User {
 }
 
 model Section {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   title     String
   position  Int?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   lessons   Lesson[]
 }
 
-/**
- * Keep slug/system (legacy) and make sectionId optional so we don't
- * break existing rows that may not have a section yet.
- */
+model Division {
+  id       Int      @id @default(autoincrement())
+  // keep original DB column names to avoid drop
+  csiCode  String?
+  name     String?
+}
+
 model Lesson {
   id          Int        @id @default(autoincrement())
   title       String
   description String?
+
+  // keep both hierarchies: Section (new) and Division (legacy)
   sectionId   Int?
   section     Section?   @relation(fields: [sectionId], references: [id], onDelete: SetNull)
 
-  // legacy columns preserved
-  slug        String?
-  system      String?
+  divisionId  Int?                                    // legacy
+  division    Division? @relation(fields: [divisionId], references: [id], onDelete: SetNull)
+
+  slug        String?                                 // legacy
+  system      String?                                 // keep as String to match DB (avoids drop/recreate)
 
   createdAt   DateTime   @default(now())
 
   // back-relations
   exercises   Exercise[]
-  progress    Progress[]   // for Progress.lesson
+  progress    Progress[]
 
   @@index([sectionId])
+  @@index([divisionId])
 }
 
-/**
- * Keep legacy answer/data; add explanation.
- * NOTE: Omit required updatedAt to avoid Vercel “cannot execute” errors.
- */
 model Exercise {
-  id          Int          @id @default(autoincrement())
+  id          Int           @id @default(autoincrement())
   lessonId    Int?
-  lesson      Lesson?      @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  lesson      Lesson?       @relation(fields: [lessonId], references: [id], onDelete: SetNull)
 
   type        ExerciseType
   prompt      String
-  explanation String?      // new field
+  explanation String?       // new, optional (safe)
 
-  // legacy payloads (preserved)
+  // legacy payloads kept
   answer      Json?
   data        Json?
 
-  createdAt   DateTime     @default(now())
+  createdAt   DateTime      @default(now())
 
   // back-relations
-  attempts    Attempt[]    @relation("ExerciseAttempts")
-  srsItems    SRSItem[]    @relation("ExerciseSRS")
+  attempts    Attempt[]     @relation("ExerciseAttempts")
+  srsItems    SRSItem[]     @relation("ExerciseSRS")
 
   @@index([lessonId])
 }
 
-/**
- * Keep response & createdAt (legacy). Avoid adding updatedAt (required).
- */
 model Attempt {
   id          Int       @id @default(autoincrement())
 
@@ -119,17 +119,13 @@ model Attempt {
   exercise    Exercise  @relation("ExerciseAttempts", fields: [exerciseId], references: [id], onDelete: Cascade)
 
   correct     Boolean
-  response    Json?     // legacy
-  createdAt   DateTime  @default(now())
+  response    Json?       // legacy
+  createdAt   DateTime    @default(now())
 
   @@index([userId])
   @@index([exerciseId])
 }
 
-/**
- * Keep dueDate/interval/ef (legacy). Add richer SRS fields.
- * Avoid adding a required updatedAt column (omit it).
- */
 model SRSItem {
   id             Int       @id @default(autoincrement())
 
@@ -139,27 +135,26 @@ model SRSItem {
   exerciseId     Int
   exercise       Exercise  @relation("ExerciseSRS", fields: [exerciseId], references: [id], onDelete: Cascade)
 
-  // legacy columns (preserved)
+  // legacy columns preserved
   dueDate        DateTime?
   interval       Int?
   ef             Float?
-
-  // richer scheduling (safe defaults / optional)
-  reps           Int       @default(0)
+  reps           Int        @default(0) @map("repetition") // map to legacy column name
+  // richer optional fields (safe)
   lastReviewedAt DateTime?
   nextReviewAt   DateTime?
 
-  createdAt      DateTime  @default(now())
+  createdAt      DateTime   @default(now())
 
-  @@unique([userId, exerciseId])
+  // avoid adding new unique constraints during Vercel build
+  // @@unique([userId, exerciseId])
+
+  @@index([userId])
+  @@index([exerciseId])
   @@index([dueDate])
   @@index([nextReviewAt])
 }
 
-/**
- * Per-lesson progress per user.
- * Keep updatedAt with default(now()) so it’s executable (has default).
- */
 model Progress {
   id        Int      @id @default(autoincrement())
 
@@ -170,16 +165,12 @@ model Progress {
   lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   status    String?
-  updatedAt DateTime @default(now())
+  updatedAt DateTime @default(now()) // has default, safe to push
 
   @@index([userId])
   @@index([lessonId])
 }
 
-/**
- * Optional FK to User; opposite side on User.leaderboard.
- * Avoid updatedAt (required) to keep push executable.
- */
 model LeaderboardEntry {
   id        Int      @id @default(autoincrement())
 
@@ -195,9 +186,6 @@ model LeaderboardEntry {
   @@index([userId])
 }
 
-/**
- * Standards/documents. Keep createdAt; omit updatedAt (required).
- */
 model Standard {
   id          Int      @id @default(autoincrement())
   title       String
@@ -205,36 +193,24 @@ model Standard {
   url         String
   mime        String?
   category    String?
-
   createdAt   DateTime @default(now())
 }
 
-/* ───────────────────────  CSI / LEGACY TABLES  ─────────────────────── */
+/* ───────────────────── Legacy/aux tables ───────────────────── */
 
-/**
- * Division currently has 12 rows in your DB. To avoid “cannot execute”
- * on adding required fields, keep everything optional (nullable) here.
- * You can tighten this later with a proper migration.
- */
-model Division {
-  id    Int     @id @default(autoincrement())
-  code  String?
-  label String?
-}
-
-/**
- * Legacy tables retained so Prisma won’t attempt dropping them.
- */
 model Badge {
   id          Int      @id @default(autoincrement())
-  name        String   @unique
+  name        String    // remove @unique to avoid adding a new constraint
+  code        String?   // keep legacy column so it’s not dropped
   icon        String?
   description String?
   createdAt   DateTime @default(now())
 }
 
 model Role {
-  id          Int     @id @default(autoincrement())
-  name        String  @unique
+  id          Int      @id @default(autoincrement())
+  name        String    // remove @unique to avoid new constraint
   description String?
+  level       Int?      // keep legacy column so it’s not dropped
+  system      String?   // keep legacy column so it’s not dropped
 }
