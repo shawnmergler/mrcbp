@@ -69,6 +69,7 @@ model Lesson {
   id          Int        @id @default(autoincrement())
   title       String
   description String?
+  system      String?
 
   // new hierarchy (optional)
   sectionId   Int?
@@ -214,5 +215,5 @@ model Role {
   name        String    // no @unique to avoid adding constraint
   description String?
   level       Int?      // legacy column kept
-  system      String?   // legacy column kept
+  system      String?  @ignore
 }
