@@ -9,11 +9,13 @@ datasource db {
 }
 
 enum ExerciseType {
-  MCQ
-  IMAGE_ID
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  FILL_IN_THE_BLANK
   ORDERING
-  CALC
-  TERMS
+  MATCHING
+  HOTSPOT
+  FREE_RESPONSE
 }
 
 enum TrainingSystem {
@@ -128,7 +130,7 @@ model Progress {
   @@unique([userId, lessonId])
 }
 
- model SRSItem {
+model SRSItem {
   id          Int       @id @default(autoincrement())
   userId      Int
   exerciseId  Int
