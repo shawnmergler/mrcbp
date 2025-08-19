@@ -5,79 +5,48 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  relationMode = "foreignKeys"
 }
 
-//////////////////////////////////////////////////////
-// Enums
-//////////////////////////////////////////////////////
+//// Enums ////////////////////////////////////////////////////////////////
 
-enum Role {
-  USER
-  ADMIN
-}
-
+// Keep legacy variants so db push does NOT try to remove them.
+// Add your newer types alongside.
 enum ExerciseType {
-  MCQ_SINGLE     // one correct choice
-  MCQ_MULTI      // multiple correct choices
-  MATCHING       // left/right pairs
-  ORDER          // order/sort items
-  HOTSPOT        // click/tap hotspot(s)
-  SHORT_TEXT     // short free text; pattern-matched
-  NUMERIC        // numeric answer / range
+  // legacy – keep
+  MCQ
+  IMAGE_ID
+  ORDERING
+  CALC
+  TERMS
+
+  // new / current
+  SINGLE_SELECT
+  MULTI_SELECT
+  ORDER
+  NUMERIC
+  MATCHING
+  SHORT_ANSWER
 }
 
-enum MatchType {
-  EXACT
-  CONTAINS
-  REGEX
-}
-
-enum StandardCategory {
-  OSHA
-  BUILDING_CODE
-  OTHER
-}
-
-//////////////////////////////////////////////////////
-// Core Auth / Users
-//////////////////////////////////////////////////////
+//// Core domain //////////////////////////////////////////////////////////
 
 model User {
-  id           String      @id @default(cuid())
-  email        String?      @unique
-  role         Role        @default(USER)
-  displayName  String?
-  image        String?
+  id             String           @id @default(cuid())
+  email          String?          // keep optional to avoid destructive changes if NULLs exist
+  name           String?
+  displayName    String?
 
-  xp           Int         @default(0)
-  streak       Int         @default(0)
-  lastSeenAt   DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
-  attempts     Attempt[]
-  srsItems     SRSItem[]
-  progress     Progress[]
+  // relations
+  attempts       Attempt[]
+  srsItems       SRSItem[]
+  progress       Progress[]
+  leaderboard    LeaderboardEntry[]
 
-  leaderboardEntries LeaderboardEntry[] @relation("UserLeaderboardEntries")
-
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt @default(now())
-}
-
-//////////////////////////////////////////////////////
-// Content Structure
-//////////////////////////////////////////////////////
-
-model CSIDivision {
-  id         Int       @id @default(autoincrement())
-  code       String    @unique    // e.g. "03", "09", "26"
-  label      String               // e.g. "Concrete", "Finishes", "Electrical"
-  order      Int       @default(0)
-
-  lessons    Lesson[]
-
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt @default(now())
+  // legacy (kept to avoid drops)
+  lastActiveUTC  DateTime?        @ignore
 }
 
 model Section {
@@ -85,238 +54,206 @@ model Section {
   title      String
   slug       String    @unique
   order      Int       @default(0)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   lessons    Lesson[]
-
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt @default(now())
 }
 
 model Lesson {
-  id            Int          @id @default(autoincrement())
-  sectionId     Int?
-  divisionId    Int?         // optional CSI division mapping
-  title         String
-  description   String?
-  order         Int          @default(0)
+  id          Int        @id @default(autoincrement())
+  title       String
+  description String?
+  sectionId   Int?       // optional to avoid destructive change on existing rows
+  section     Section?   @relation(fields: [sectionId], references: [id], onDelete: SetNull)
 
-  section    Section? @relation(fields: [sectionId], references: [id])
-  division      CSIDivision? @relation(fields: [divisionId], references: [id], onDelete: SetNull)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
-  exercises     Exercise[]
-  progress      Progress[]
+  exercises   Exercise[]
 
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt @default(now())
-
-  @@index([sectionId])
-  @@index([divisionId])
+  // legacy columns (kept to avoid drops)
+  slug        String?    @ignore
+  system      String?    @ignore
 }
-
-//////////////////////////////////////////////////////
-// Exercises (Questions) + Per-type payloads
-//////////////////////////////////////////////////////
 
 model Exercise {
-  id           Int            @id @default(autoincrement())
-  lessonId     Int
-  type         ExerciseType
-  prompt       String
-  explanation  String?        // shown after submit
-  mediaUrl     String?        // optional image/pdf/video
-  points       Int            @default(1)
+  id          Int            @id @default(autoincrement())
+  lessonId    Int
+  lesson      Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
-  lesson       Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  type        ExerciseType
+  prompt      String
+  explanation String?
 
-  // Per-type child records
-  choices      Choice[]       // for MCQ_SINGLE / MCQ_MULTI
-  matchPairs   MatchPair[]    // for MATCHING
-  orderItems   OrderItem[]    // for ORDER
-  hotspots     Hotspot[]      // for HOTSPOT
-  textAnswers  AcceptAnswer[] // for SHORT_TEXT
-  numericSpec  NumericSpec?   // for NUMERIC
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 
-  // Back-relations (needed by Prisma)
-  attempts     Attempt[]      @relation("ExerciseAttempts")
-  srsItems     SRSItem[]      @relation("ExerciseSRS")
+  // back-relations (named to satisfy earlier validation errors)
+  attempts    Attempt[]      @relation("ExerciseAttempts")
+  srsItems    SRSItem[]      @relation("ExerciseSRS")
 
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt @default(now())
+  // advanced-type children (optional per type)
+  choices     ExerciseChoice[]
+  matchPairs  ExerciseMatchingPair[]
+  orderItems  ExerciseOrderItem[]
+  numeric     ExerciseNumeric?
+  shortAnswer ExerciseShortAnswer?
 
-  @@index([lessonId])
+  // legacy payloads (kept to avoid drops)
+  answer      Json?          @ignore
+  data        Json?          @ignore
 }
-
-// Multiple-choice option (single or multi)
-model Choice {
-  id          Int      @id @default(autoincrement())
-  exerciseId  Int
-  idx         Int      @default(0)
-  text        String
-  correct     Boolean  @default(false)
-  rationale   String?  // optional choice-level explanation
-
-  exercise    Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
-
-  @@unique([exerciseId, idx])
-  @@index([exerciseId])
-}
-
-// Matching pairs
-model MatchPair {
-  id          Int      @id @default(autoincrement())
-  exerciseId  Int
-  leftText    String
-  rightText   String
-  idx         Int      @default(0)
-
-  exercise    Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
-
-  @@unique([exerciseId, idx])
-  @@index([exerciseId])
-}
-
-// Ordering items
-model OrderItem {
-  id              Int      @id @default(autoincrement())
-  exerciseId      Int
-  text            String
-  correctPosition Int
-
-  exercise        Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
-
-  @@unique([exerciseId, correctPosition])
-  @@index([exerciseId])
-}
-
-// Hotspot (normalized 0..1 coords)
-model Hotspot {
-  id          Int      @id @default(autoincrement())
-  exerciseId  Int
-  // rectangle; if you need polygon later, add JSON points
-  x           Float    // left
-  y           Float    // top
-  w           Float    // width
-  h           Float    // height
-  idx         Int      @default(0)
-
-  exercise    Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
-
-  @@unique([exerciseId, idx])
-  @@index([exerciseId])
-}
-
-// Accepted short-text answers (case/regex options)
-model AcceptAnswer {
-  id          Int       @id @default(autoincrement())
-  exerciseId  Int
-  value       String    // pattern or literal
-  matchType   MatchType @default(EXACT)
-  caseSensitive Boolean @default(false)
-
-  exercise    Exercise  @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
-
-  @@index([exerciseId])
-}
-
-// Numeric single answer or range (+/- tolerance)
-model NumericSpec {
-  id           Int      @id @default(autoincrement())
-  exerciseId   Int      @unique
-  min          Float?
-  max          Float?
-  value        Float?
-  tolerance    Float?   // +/- margin
-
-  exercise     Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
-}
-
-//////////////////////////////////////////////////////
-// Attempts / SRS / Progress
-//////////////////////////////////////////////////////
 
 model Attempt {
-  id          Int       @id @default(autoincrement())
+  id          Int        @id @default(autoincrement())
+
   userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   exerciseId  Int
+  exercise    Exercise   @relation("ExerciseAttempts", fields: [exerciseId], references: [id], onDelete: Cascade)
+
   correct     Boolean
-  score       Int?      // optional partial credit
-  payload     Json?     // submitted answer(s)
-  durationMs  Int?      // time spent
-  submittedAt DateTime  @default(now())
+  submittedAt DateTime   @default(now())
 
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  exercise    Exercise  @relation("ExerciseAttempts", fields: [exerciseId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([exerciseId])
-  @@index([submittedAt])
+  // legacy (kept to avoid drops)
+  createdAt   DateTime?  @ignore
+  response    Json?      @ignore
 }
 
 model SRSItem {
-  id           Int       @id @default(autoincrement())
-  userId       String
-  exerciseId   Int
-  repetition   Int       @default(0)
-  intervalDays Int       @default(0)
-  easiness     Float     @default(2.5) // SM-2 starting EF
-  dueAt        DateTime?
+  id          Int        @id @default(autoincrement())
 
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  exercise     Exercise  @relation("ExerciseSRS", fields: [exerciseId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt @default(now())
+  exerciseId  Int
+  exercise    Exercise   @relation("ExerciseSRS", fields: [exerciseId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, exerciseId])
-  @@index([dueAt])
+  repetition  Int        @default(0)
+  streak      Int        @default(0)
+  lastReviewed DateTime?
+  nextReview   DateTime?
+
+  // legacy SM2-style fields (kept to avoid drops)
+  dueDate     DateTime?  @ignore
+  ef          Float?     @ignore
+  interval    Int?       @ignore
 }
 
 model Progress {
-  id         Int       @id @default(autoincrement())
-  userId     String
-  lessonId   Int
-  percent    Int       @default(0) // 0-100
-  completed  Boolean   @default(false)
-  completedAt DateTime?
+  id        Int      @id @default(autoincrement())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId  Int
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lesson     Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt @default(now())
-
-  @@unique([userId, lessonId])
-  @@index([lessonId])
+  status    String?  // keep flexible to avoid enum churn
+  updatedAt DateTime @default(now())
 }
 
-//////////////////////////////////////////////////////
-// Standards & Leaderboard
-//////////////////////////////////////////////////////
+model LeaderboardEntry {
+  id        Int      @id @default(autoincrement())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  name      String?
+  xp        Int      @default(0)
+  streak    Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+//// Advanced exercise subtypes //////////////////////////////////////////
+
+// For SINGLE_SELECT / MULTI_SELECT
+model ExerciseChoice {
+  id         Int       @id @default(autoincrement())
+  exerciseId Int
+  exercise   Exercise  @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  text       String
+  isCorrect  Boolean   @default(false)
+  order      Int       @default(0)
+
+  @@index([exerciseId])
+}
+
+// For MATCHING
+model ExerciseMatchingPair {
+  id         Int       @id @default(autoincrement())
+  exerciseId Int
+  exercise   Exercise  @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  leftText   String
+  rightText  String
+  order      Int       @default(0)
+
+  @@index([exerciseId])
+}
+
+// For ORDER
+model ExerciseOrderItem {
+  id         Int       @id @default(autoincrement())
+  exerciseId Int
+  exercise   Exercise  @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  text       String
+  position   Int
+
+  @@index([exerciseId])
+}
+
+// For NUMERIC (one row per exercise)
+model ExerciseNumeric {
+  exerciseId Int       @id
+  exercise   Exercise  @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  value      Float
+  tolerance  Float?
+}
+
+// For SHORT_ANSWER (one row per exercise)
+model ExerciseShortAnswer {
+  exerciseId        Int      @id
+  exercise          Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  acceptableAnswers Json     // e.g. ["OSHA", "O.S.H.A."] (case-insensitive compare in app)
+}
+
+//// Other app data ///////////////////////////////////////////////////////
 
 model Standard {
-  id          Int               @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   title       String
   description String?
   url         String
   mime        String?
-  category    StandardCategory  @default(OTHER)
+  createdAt   DateTime  @default(now())
 
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt @default(now())
+  // (No 'category' field here on purpose to match existing DB/app usage.)
 }
 
-model LeaderboardEntry {
-  id          Int       @id @default(autoincrement())
-  userId      String?   // optional: can link to a user
-  displayName String
-  points      Int       @default(0)
-  avatarUrl   String?
+// Keep Division active (editor relies on it). Use permissive optional fields to avoid churn.
+model Division {
+  id        Int       @id @default(autoincrement())
+  code      String?
+  label     String?
+  createdAt DateTime? @default(now())
+}
 
- user        User?     @relation("UserLeaderboardEntries", fields: [userId], references: [id], onDelete: SetNull)
+//// Legacy tables preserved but ignored (prevents drop on db push) //////
 
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt @default(now())
+model Badge {
+  id   Int     @id @default(autoincrement())
+  name String?
+  @@ignore
+}
 
-  @@index([userId])
-  @@index([points])
+model Role {
+  id   Int     @id @default(autoincrement())
+  name String?
+  @@ignore
 }
