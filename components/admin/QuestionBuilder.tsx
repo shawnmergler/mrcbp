@@ -1,101 +1,87 @@
+// components/admin/QuestionBuilder.tsx
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import Icons from '@/components/Icons';
 
-type Choice = { id: 'A' | 'B' | 'C' | 'D'; text: string; correct: boolean };
-type Section = { id: number; title: string };
-type Lesson = { id: number; title: string };
+type SystemId = 'PROJECT_MANAGEMENT' | 'SITE_SUPERVISION';
+type Lesson = { id:number; title:string; system:SystemId };
 
-export default function QuestionBuilder() {
-  const [prompt, setPrompt] = useState('');
-  const [choices, setChoices] = useState<Choice[]>([
-    { id: 'A', text: '', correct: false },
-    { id: 'B', text: '', correct: false },
-    { id: 'C', text: '', correct: false },
-    { id: 'D', text: '', correct: false },
-  ]);
-  const [sectionId, setSectionId] = useState<number | ''>('');
+export default function QuestionBuilder(){
+  const [sections, setSections] = useState<{id:SystemId; name:string}[]>([]);
+  const [lessons, setLessons]   = useState<Lesson[]>([]);
   const [lessonId, setLessonId] = useState<number | ''>('');
-  const [sections, setSections] = useState<Section[]>([]);
-  const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [file, setFile] = useState<File | null>(null);
-  const correct = useMemo(() => choices.find(c => c.correct)?.id ?? null, [choices]);
 
-  useEffect(() => {
-    (async () => {
-      const s = await fetch('/api/admin/sections'); if (s.ok) setSections(await s.json());
-      const l = await fetch('/api/admin/lessons');  if (l.ok) setLessons(await l.json());
+  const [prompt, setPrompt] = useState('');
+  const [choices, setChoices] = useState<string[]>(['','','','']);
+  const [answer, setAnswer] = useState('A');
+
+  useEffect(()=>{
+    (async ()=>{
+      const secs = await fetch('/api/admin/sections').then(r=>r.json());
+      const ls = await fetch('/api/admin/lessons').then(r=>r.json());
+      setSections(secs);
+      setLessons(ls);
     })();
-  }, []);
+  },[]);
 
-  function setChoice(id: Choice['id'], text: string) { setChoices(cs => cs.map(c => c.id === id ? { ...c, text } : c)); }
-  function setCorrect(id: Choice['id']) { setChoices(cs => cs.map(c => ({ ...c, correct: c.id === id }))); }
-
-  async function save() {
-    let mediaUrl = '';
-    if (file) {
-      const form = new FormData(); form.append('file', file);
-      const r = await fetch('/api/admin/questions/upload', { method: 'POST', body: form });
-      if (r.ok) mediaUrl = (await r.json()).url;
-    }
+  async function create(){
+    if(!lessonId) return;
     await fetch('/api/admin/questions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
+        lessonId: Number(lessonId),
+        type: 'MULTIPLE_CHOICE',
         prompt,
-        choices: choices.map(c => ({ label: c.id, text: c.text, correct: c.correct })),
-        sectionId, lessonId, mediaUrl
-      }),
+        options: choices,
+        answerKey: answer
+      })
     });
-    setPrompt(''); setChoices(choices.map(c => ({ ...c, text: '', correct: false }))); setFile(null);
+    setPrompt(''); setChoices(['','','','']); setAnswer('A'); setLessonId('');
   }
 
   return (
     <section className="card">
-      <h3 className="section">Create Question</h3>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div>
-          <div className="label">Prompt</div>
-          <textarea className="input full-width" rows={4} value={prompt} onChange={(e) => setPrompt(e.target.value)} />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-            {choices.map(c => (
-              <div key={c.id} className="flex items-center gap-2">
-                <input type="radio" name="correct" checked={c.correct} onChange={() => setCorrect(c.id)} />
-                <input className="input w-full" placeholder={`Choice ${c.id}`} value={c.text}
-                       onChange={(e) => setChoice(c.id, e.target.value)} />
-              </div>
-            ))}
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3">
-            <select className="input" value={sectionId as any} onChange={(e) => setSectionId(e.target.value ? Number(e.target.value) : '')}>
-              <option value="">Select section</option>
-              {sections.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
-            </select>
-            <select className="input" value={lessonId as any} onChange={(e) => setLessonId(e.target.value ? Number(e.target.value) : '')}>
-              <option value="">Assign to lesson</option>
-              {lessons.map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
-            </select>
-            <label className="btn-ghost" style={{ padding: '6px 8px', borderRadius: 8, cursor: 'pointer', textAlign: 'center' }}>
-              Attach file
-              <input type="file" accept="image/*,application/pdf" style={{ display: 'none' }}
-                     onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-            </label>
-          </div>
-          <div className="mt-3"><button className="btn" onClick={save} disabled={!prompt || !correct}>Save Question</button></div>
-        </div>
+      <h3 className="section">Create Questions</h3>
 
-        {/* Preview */}
-        <div className="rounded-lg border p-4 bg-white">
-          <div className="text-xs uppercase font-semibold text-gray-500 mb-2">Preview</div>
-          <div className="font-medium mb-3">{prompt || 'Your question will appear here…'}</div>
-          <ul className="space-y-2">
-            {choices.map(c => (
-              <li key={c.id} className={`p-2 rounded border ${c.correct ? 'border-green-500' : 'border-gray-200'}`}>
-                {c.id}. {c.text || <span className="text-gray-400">Choice {c.id}</span>}
-              </li>
-            ))}
-          </ul>
-          {file && <div className="mt-3 text-sm truncate">Attached: {file.name}</div>}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+        <div className="md:col-span-2">
+          <div className="label">Prompt</div>
+          <textarea className="input w-full min-h-24" value={prompt} onChange={e=>setPrompt(e.target.value)} placeholder="Write the question stem here..." />
         </div>
+        <div>
+          <div className="label">Lesson</div>
+          <select className="input w-full" value={lessonId} onChange={e=>setLessonId(e.target.value ? Number(e.target.value) : '')}>
+            <option value="">— Choose Lesson —</option>
+            {sections.map(sec => (
+              <optgroup key={sec.id} label={sec.name}>
+                {lessons.filter(l=>l.system===sec.id).map(l=> <option key={l.id} value={l.id}>{l.title}</option>)}
+              </optgroup>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
+        {choices.map((c, i)=> (
+          <div key={i}>
+            <div className="label">Choice {String.fromCharCode(65+i)}</div>
+            <input className="input w-full" value={c} onChange={e=>{
+              const n=[...choices]; n[i]=e.target.value; setChoices(n);
+            }} />
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-2">
+        <div className="label">Correct Answer</div>
+        <select className="input w-32" value={answer} onChange={e=>setAnswer(e.target.value)}>
+          <option>A</option><option>B</option><option>C</option><option>D</option>
+        </select>
+      </div>
+
+      <div className="mt-3">
+        <button className="btn" onClick={create}><Icons.save className="w-4 h-4" /> Save Question</button>
       </div>
     </section>
   );

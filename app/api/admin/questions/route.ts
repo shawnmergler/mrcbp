@@ -1,33 +1,51 @@
+// app/api/admin/questions/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 export async function GET(req: NextRequest){
-  const divisionId = req.nextUrl.searchParams.get('divisionId');
-  if(divisionId){
-    const div = await prisma.division.findUnique({ where: { id: Number(divisionId) }, include: { lessons: true } });
-    return NextResponse.json(div ?? {});
-  }
-  const divisions = await prisma.division.findMany({ include: { lessons: { include: { exercises: { select: { id:true, prompt:true, lessonId:true } } } } }, orderBy: { csiCode: 'asc' } });
-  return NextResponse.json(divisions.map(d => ({ division: { id: d.id, csiCode: d.csiCode, name: d.name }, lessons: d.lessons.map(l => ({ id: l.id, title: l.title, exercises: l.exercises })) })));
+  const url = new URL(req.url);
+  const lessonId = url.searchParams.get('lessonId');
+  const where = lessonId ? { lessonId: Number(lessonId) } : {};
+  const rows = await prisma.exercise.findMany({
+    where,
+    orderBy: [{ lessonId:'asc' }, { id:'asc' }],
+    select: { id:true, lessonId:true, type:true, prompt:true, optionsJson:true, answerKey:true }
+  });
+  return NextResponse.json(rows);
 }
 
 export async function POST(req: NextRequest){
-  const { lessonId, prompt, options, correct, assetUrl } = await req.json();
-  const ex = await prisma.exercise.create({
+  const { lessonId, type, prompt, options, answerKey } = await req.json();
+  if(!lessonId || !prompt) return NextResponse.json({ error:'Missing fields' }, { status:400 });
+  const created = await prisma.exercise.create({
     data: {
       lessonId: Number(lessonId),
-      type: 'MCQ',
+      type: type ?? 'MULTIPLE_CHOICE',
       prompt,
-      data: { options },
-      answer: { correct },
-      assetUrl
+      optionsJson: options ? JSON.stringify(options) : null,
+      answerKey: answerKey ?? null,
     }
   });
-  return NextResponse.json(ex);
+  return NextResponse.json(created, { status:201 });
+}
+
+export async function PUT(req: NextRequest){
+  const { id, prompt, options, answerKey } = await req.json();
+  if(!id) return NextResponse.json({ error:'Missing id' }, { status:400 });
+  const updated = await prisma.exercise.update({
+    where: { id: Number(id) },
+    data: {
+      prompt,
+      optionsJson: options ? JSON.stringify(options) : undefined,
+      answerKey
+    }
+  });
+  return NextResponse.json(updated);
 }
 
 export async function DELETE(req: NextRequest){
   const { id } = await req.json();
-  await prisma.exercise.delete({ where: { id } });
-  return NextResponse.json({ ok: true });
+  if(!id) return NextResponse.json({ error:'Missing id' }, { status:400 });
+  await prisma.exercise.delete({ where: { id: Number(id) } });
+  return NextResponse.json({ ok:true });
 }

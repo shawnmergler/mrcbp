@@ -1,96 +1,44 @@
+// app/page.tsx
 import Link from 'next/link';
+import Icons from '@/components/Icons';
+import QuickAccess from '@/components/QuickAccess';
 
-type SearchParams = {
-  [key: string]: string | string[] | undefined;
-};
-
-function first(q: string | string[] | undefined) {
-  return Array.isArray(q) ? q[0] : q;
-}
-
-export default function Home({
-  searchParams,
-}: {
-  searchParams?: SearchParams;
-}) {
-  const badTry = first(searchParams?.adminError) === '1';
-
+export default function HomePage() {
   return (
-    <main className="container mx-auto p-4">
-      {/* Friendly banner shown after an incorrect Admin login */}
-      {badTry && (
-        <div
-          role="status"
-          className="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
-        >
-          Admin sign-in failed. Click{' '}
-          <Link href="/admin/login" className="underline">
-            Admin
-          </Link>{' '}
-          to try again.
-        </div>
-      )}
-
-      {/* --- Your existing homepage content goes below this line --- */}
-      {/* If you already have content here, keep it; this block is a safe placeholder. */}
-      <section className="card mb-6">
-        <h1 className="text-xl font-semibold">Welcome</h1>
-        <p className="text-sm text-gray-600">
-          Use the quick links below to jump into training and resources.
+    <div className="space-y-6 pb-24">
+      {/* Friendly banner */}
+      <div className="rounded-xl p-4 md:p-6 bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow">
+        <h1 className="text-xl md:text-2xl font-semibold">Welcome to the MR Construction BP</h1>
+        <p className="opacity-90 mt-1">
+          Dive into lessons, browse standards, and keep your crews sharp.
         </p>
-      </section>
+      </div>
 
-      {/* Quick Access (example) */}
-      <nav
-        aria-label="Quick Access"
-        className="card w-full mb-6 p-4 grid gap-3 sm:grid-cols-2 md:grid-cols-3"
-      >
-        <Link href="/lesson" className="btn">
-          Lessons
+      {/* Big tiles */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Link href="/system/PROJECT_MANAGEMENT" className="tile">
+          <Icons.pm className="w-6 h-6 text-gray-900" aria-hidden />
+          <div className="text-xs font-medium text-gray-900 text-center">Project Management</div>
         </Link>
-        <Link href="/questions" className="btn">
-          Practice Questions
-        </Link>
-        <Link href="/standards" className="btn">
-          Standards
-        </Link>
-        <a
-          href="https://www.osha.gov/training"
-          target="_blank"
-          rel="noreferrer"
-          className="btn"
-        >
-          OSHA Safety Training
-        </a>
-        <a
-          href="https://codes.iccsafe.org/"
-          target="_blank"
-          rel="noreferrer"
-          className="btn"
-        >
-          Building Codes (ICC)
-        </a>
-        <Link href="/leaderboard" className="btn">
-          Leaderboard
-        </Link>
-      </nav>
 
-      {/* Placeholder main grid */}
-      <section className="grid gap-4 sm:grid-cols-2">
-        <div className="card p-4">
-          <h2 className="font-semibold mb-2">Project Management</h2>
-          <p className="text-sm text-gray-600">
-            Budgets • Contracts • Risk • Scheduling
-          </p>
-        </div>
-        <div className="card p-4">
-          <h2 className="font-semibold mb-2">Site Supervision</h2>
-          <p className="text-sm text-gray-600">
-            Field • Quality • Codes • Safety
-          </p>
-        </div>
-      </section>
-      {/* --- End placeholder content --- */}
-    </main>
+        <Link href="/system/SITE_SUPERVISION" className="tile">
+          <Icons.site className="w-6 h-6 text-gray-900" aria-hidden />
+          <div className="text-xs font-medium text-gray-900 text-center">Site Supervision</div>
+        </Link>
+
+        <Link href="/standards" className="tile">
+          <Icons.standards className="w-6 h-6 text-gray-900" aria-hidden />
+          <div className="text-xs font-medium text-gray-900 text-center">Standards</div>
+        </Link>
+
+        <Link href="/leaderboard" className="tile">
+          <Icons.trophy className="w-6 h-6 text-gray-900" aria-hidden />
+          <div className="text-xs font-medium text-gray-900 text-center">Leaderboard</div>
+        </Link>
+      </div>
+
+      {/* Quick Access */}
+      <QuickAccess />
+    </div>
   );
 }
