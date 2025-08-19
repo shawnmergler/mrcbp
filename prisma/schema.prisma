@@ -83,6 +83,7 @@ model Lesson {
 model Attempt {
   id          Int       @id @default(autoincrement())
   userId      Int
+  user        User      @relation(fields: [userId], references: [id])  // <— add this
   exerciseId  Int
   exercise    Exercise  @relation("ExerciseAttempts", fields: [exerciseId], references: [id])
   correct     Boolean
@@ -120,10 +121,11 @@ model Progress {
 model SRSItem {
   id          Int       @id @default(autoincrement())
   userId      Int
+  user        User      @relation(fields: [userId], references: [id])  // <— add this
   exerciseId  Int
   exercise    Exercise  @relation("ExerciseSRS", fields: [exerciseId], references: [id])
   repetition  Int       @default(0)
-  interval    Int       @default(1)   // days
+  interval    Int       @default(1)
   ease        Float     @default(2.5)
   dueAt       DateTime  @default(now())
 }
