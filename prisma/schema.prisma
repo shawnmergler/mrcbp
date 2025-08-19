@@ -8,7 +8,7 @@ datasource db {
   relationMode = "foreignKeys"
 }
 
-/* ───────────────────── Enums ───────────────────── */
+/* ─────────────── Enums ─────────────── */
 
 enum ExerciseType {
   // legacy (keep so old rows remain valid)
@@ -27,16 +27,16 @@ enum ExerciseType {
   DRAG_DROP
 }
 
-/* ───────────────────── Core Models ───────────────────── */
+/* ─────────────── Models ─────────────── */
 
 model User {
   id            String    @id @default(cuid()) // keep String to match existing FKs
-  email         String?                          // keep optional; existing NULLs in DB
+  email         String?                         // keep optional; existing NULLs
   name          String?
   displayName   String?
-  lastActiveUTC DateTime?                        // legacy column retained
+  lastActiveUTC DateTime?                       // legacy column retained
   xp            Int        @default(0)
-  streak        Int?                               // legacy column preserved
+  streak        Int?                              // legacy column preserved
   createdAt     DateTime   @default(now())
 
   // relations
@@ -56,10 +56,13 @@ model Section {
 }
 
 model Division {
-  id       Int      @id @default(autoincrement())
+  id       Int       @id @default(autoincrement())
   // keep original DB column names to avoid drop
   csiCode  String?
   name     String?
+
+  // ✅ back-relation for Lesson.division
+  lessons  Lesson[]
 }
 
 model Lesson {
@@ -67,17 +70,17 @@ model Lesson {
   title       String
   description String?
 
-  // keep both hierarchies: Section (new) and Division (legacy)
+  // new hierarchy (optional)
   sectionId   Int?
   section     Section?   @relation(fields: [sectionId], references: [id], onDelete: SetNull)
 
-  divisionId  Int?                                    // legacy
-  division    Division? @relation(fields: [divisionId], references: [id], onDelete: SetNull)
+  // legacy hierarchy (optional)
+  divisionId  Int?
+  division    Division?  @relation(fields: [divisionId], references: [id], onDelete: SetNull)
 
-  slug        String?                                 // legacy
-  system      String?                                 // keep as String to match DB (avoids drop/recreate)
-
-  createdAt   DateTime   @default(now())
+  slug        String?     // legacy
+  system      String?     // keep as String to match DB
+  createdAt   DateTime    @default(now())
 
   // back-relations
   exercises   Exercise[]
@@ -94,7 +97,7 @@ model Exercise {
 
   type        ExerciseType
   prompt      String
-  explanation String?       // new, optional (safe)
+  explanation String?       // optional (safe)
 
   // legacy payloads kept
   answer      Json?
@@ -140,13 +143,14 @@ model SRSItem {
   interval       Int?
   ef             Float?
   reps           Int        @default(0) @map("repetition") // map to legacy column name
-  // richer optional fields (safe)
+
+  // optional extras (safe)
   lastReviewedAt DateTime?
   nextReviewAt   DateTime?
 
   createdAt      DateTime   @default(now())
 
-  // avoid adding new unique constraints during Vercel build
+  // avoid adding unique during build
   // @@unique([userId, exerciseId])
 
   @@index([userId])
@@ -165,7 +169,7 @@ model Progress {
   lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   status    String?
-  updatedAt DateTime @default(now()) // has default, safe to push
+  updatedAt DateTime @default(now()) // has default, safe
 
   @@index([userId])
   @@index([lessonId])
@@ -196,12 +200,10 @@ model Standard {
   createdAt   DateTime @default(now())
 }
 
-/* ───────────────────── Legacy/aux tables ───────────────────── */
-
 model Badge {
   id          Int      @id @default(autoincrement())
-  name        String    // remove @unique to avoid adding a new constraint
-  code        String?   // keep legacy column so it’s not dropped
+  name        String    // no @unique to avoid adding constraint in prod
+  code        String?   // legacy column kept
   icon        String?
   description String?
   createdAt   DateTime @default(now())
@@ -209,8 +211,8 @@ model Badge {
 
 model Role {
   id          Int      @id @default(autoincrement())
-  name        String    // remove @unique to avoid new constraint
+  name        String    // no @unique to avoid adding constraint
   description String?
-  level       Int?      // keep legacy column so it’s not dropped
-  system      String?   // keep legacy column so it’s not dropped
+  level       Int?      // legacy column kept
+  system      String?   // legacy column kept
 }
