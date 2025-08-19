@@ -1,28 +1,50 @@
 // app/admin/login/page.tsx
-'use client';
-import React from 'react';
-import { useFormState } from 'react-dom';
-import { login } from './actions';
+import Link from 'next/link';
+import { loginAction } from './actions';
 
-export default function AdminLoginPage(){
-  const [state, formAction] = useFormState(login, null);
-
+export default function AdminLoginPage() {
   return (
-    <div className="max-w-md mx-auto mt-16 p-6 bg-white rounded-xl shadow">
-      <h1 className="text-lg font-semibold mb-2">Admin Login</h1>
-      <p className="text-sm text-gray-600 mb-4">Please sign in to access the admin panel.</p>
-      <form action={formAction} className="space-y-2">
-        <div>
-          <label className="label">Username</label>
-          <input name="username" className="input w-full" />
+    <main className="container mx-auto p-4">
+      <section className="card max-w-md mx-auto">
+        <h1 className="text-xl font-semibold mb-1">Admin Sign In</h1>
+        <p className="text-sm text-gray-600 mb-4">
+          Enter your admin credentials to continue.
+        </p>
+
+        <form action={loginAction} className="grid gap-3">
+          <label className="grid gap-1">
+            <span className="label">Username</span>
+            <input
+              name="username"
+              className="input"
+              autoComplete="username"
+              required
+            />
+          </label>
+
+          <label className="grid gap-1">
+            <span className="label">Password</span>
+            <input
+              name="password"
+              type="password"
+              className="input"
+              autoComplete="current-password"
+              required
+            />
+          </label>
+
+          <button type="submit" className="btn">Sign in</button>
+        </form>
+
+        <div className="mt-4 text-xs text-gray-500">
+          Wrong credentials will send you back to the home page with a retry
+          banner—just come back here to try again.
         </div>
-        <div>
-          <label className="label">Password</label>
-          <input type="password" name="password" className="input w-full" />
+
+        <div className="mt-4">
+          <Link href="/" className="btn-ghost">← Back to Home</Link>
         </div>
-        <button className="btn w-full mt-2" type="submit">Sign In</button>
-      </form>
-      {state === 'error' ? <div className="text-red-600 text-sm mt-2">Invalid credentials.</div> : null}
-    </div>
+      </section>
+    </main>
   );
 }

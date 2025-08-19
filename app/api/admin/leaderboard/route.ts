@@ -1,29 +1,19 @@
-// app/api/admin/leaderboard/route.ts
-import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(){
-  const rows = await prisma.user.findMany({
-    orderBy: [{ xp: 'desc' }, { name: 'asc' }],
-    select: { id:true, name:true, xp:true, streak:true }
-  });
-  return NextResponse.json(rows);
-}
-
-export async function POST(req: NextRequest){
-  const { name, xp, streak } = await req.json();
-  const created = await prisma.user.create({ data: { name, xp: Number(xp||0), streak: Number(streak||0) }});
-  return NextResponse.json(created, { status:201 });
+  const list = await prisma.user.findMany({ orderBy: [{ xp: 'desc' }, { streak: 'desc' }], select: { id:true, displayName:true, xp:true, streak:true } });
+  return NextResponse.json(list);
 }
 
 export async function PUT(req: NextRequest){
-  const { id, name, xp, streak } = await req.json();
-  const updated = await prisma.user.update({ where: { id: Number(id) }, data: { name, xp: Number(xp), streak: Number(streak) }});
-  return NextResponse.json(updated);
+  const { id, displayName, xp, streak } = await req.json();
+  const r = await prisma.user.update({ where: { id }, data: { displayName, xp, streak } });
+  return NextResponse.json(r);
 }
 
 export async function DELETE(req: NextRequest){
   const { id } = await req.json();
-  await prisma.user.delete({ where: { id: Number(id) } });
-  return NextResponse.json({ ok:true });
+  await prisma.user.delete({ where: { id } });
+  return NextResponse.json({ ok: true });
 }

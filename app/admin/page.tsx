@@ -1,22 +1,19 @@
-// app/admin/page.tsx
 import StandardsManager from '@/components/admin/StandardsManager';
+import SectionLessonCreator from '@/components/admin/SectionLessonCreator';
 import DivisionsEditor from '@/components/admin/DivisionsEditor';
-import SectionLessonManager from '@/components/admin/SectionLessonManager';
+import LeaderboardEditor from '@/components/admin/LeaderboardEditor';
 import QuestionBuilder from '@/components/admin/QuestionBuilder';
 import QuestionDB from '@/components/admin/QuestionDB';
-import LeaderboardEditor from '@/components/admin/LeaderboardEditor';
 
-export default async function AdminPage(){
+export default function AdminPage(){
   return (
-    <div className="space-y-6 pb-24">
-      <SectionLessonManager />
-      <QuestionBuilder />
+    <div className="container" style={{display:'grid', gap:12}}>
+      <SectionLessonCreator />
+        <QuestionBuilder />
       <QuestionDB />
       <DivisionsEditor />
       <StandardsManager />
-      <div className="pt-2 border-t">
-        <LeaderboardEditor />
-      </div>
+      <LeaderboardEditor />
     </div>
   );
 }

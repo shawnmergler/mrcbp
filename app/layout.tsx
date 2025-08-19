@@ -1,6 +1,7 @@
 import './globals.css';
 import Image from 'next/image';
 import Link from 'next/link';
+import MobileNav from '@/components/MobileNav';
 import UserPromptInjector from '@/components/UserPromptInjector';
 import QuickAccess from '@/components/QuickAccess';
 
@@ -19,14 +20,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <span className="bp">BP</span>
           </Link>
           <nav className="topnav">
-            <Link className="link" href="/standards">Standards</Link>
             <a className="link" href="/admin">Admin</a>
           </nav>
         </header>
         <QuickAccess />
         <main className="container">{children}</main>
         <UserPromptInjector />
-      </body>
+        <MobileNav />
+    </body>
     </html>
   );
 }
